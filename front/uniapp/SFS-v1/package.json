@@ -1,0 +1,24 @@
+{
+  "name": "sfs-v1",
+  "version": "1.0.0",
+  "description": "ShakeForSpeed - A game to shake your phone as fast as possible",
+  "main": "main.js",
+  "scripts": {
+    "dev": "uniapp-cli dev",
+    "build": "uniapp-cli build"
+  },
+  "dependencies": {
+    "vue": "^3.2.0",
+    "@dcloudio/uni-app": "^3.0.0",
+    "@dcloudio/uni-app-plus": "^3.0.0",
+    "@dcloudio/uni-components": "^3.0.0",
+    "@dcloudio/uni-h5": "^3.0.0",
+    "@dcloudio/uni-mp-weixin": "^3.0.0"
+  },
+  "devDependencies": {
+    "@dcloudio/uni-cli": "^3.0.0",
+    "@dcloudio/uni-cli-shared": "^3.0.0",
+    "@dcloudio/uni-template-compiler": "^3.0.0",
+    "@vue/compiler-sfc": "^3.2.0"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": [
+    "daterange",
+    "echarts",
+    "vue",
+    "vite",
+    "elementplus"
+  ],
+  "ignorePaths": [
+    "node_modules/**"
+  ]
+}

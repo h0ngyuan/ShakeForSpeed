@@ -1,0 +1,43 @@
+{
+  "version": "1.0.0",
+  "privacyItems": [
+    {
+      "name": "加速度传感器",
+      "desc": "用于检测手机加速度变化，实现摇一摇功能",
+      "apiList": [
+        "wx.startAccelerometer",
+        "wx.stopAccelerometer",
+        "wx.onAccelerometerChange",
+        "wx.offAccelerometerChange"
+      ],
+      "pageList": [
+        "pages/game/game"
+      ],
+      "choice": 1
+    },
+    {
+      "name": "用户信息",
+      "desc": "用于展示用户昵称和头像",
+      "apiList": [
+        "wx.getUserProfile",
+        "wx.getUserInfo"
+      ],
+      "pageList": [
+        "pages/index/index"
+      ],
+      "choice": 1
+    },
+    {
+      "name": "地理位置",
+      "desc": "用于获取用户位置信息，提供区域排名功能",
+      "apiList": [
+        "wx.getLocation",
+        "wx.chooseLocation"
+      ],
+      "pageList": [
+        "pages/ranking/ranking"
+      ],
+      "choice": 1
+    }
+  ]
+}
