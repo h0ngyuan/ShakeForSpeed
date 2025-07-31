@@ -1,0 +1,25 @@
+{
+  "name": "sfs-v1",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@types/echarts": "^4.9.22",
+    "echarts": "^5.6.0",
+    "element-plus": "^2.10.4",
+    "vue": "^3.3.8",
+    "vue-baidu-map-3x": "^1.0.40",
+    "vue-router": "^4.2.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.5.0",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.0",
+    "vue-tsc": "^1.8.27"
+  }
+}

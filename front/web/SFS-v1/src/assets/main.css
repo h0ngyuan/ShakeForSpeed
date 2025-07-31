@@ -1,0 +1,218 @@
+@import './base.css';
+
+#app {
+  margin: 0 auto;
+  font-weight: normal;
+}
+
+a,
+.green {
+  text-decoration: none;
+  color: hsla(160, 100%, 37%, 1);
+  transition: 0.4s;
+  padding: 3px;
+}
+
+@media (hover: hover) {
+  a:hover {
+    background-color: hsla(160, 100%, 37%, 0.2);
+  }
+}
+
+/* 修复空媒体查询条件 */
+@media (min-width: 2048px) {
+  body {
+    display: flex;
+    place-items: center;
+  }
+
+  #app {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 0 2rem;
+  }
+}
+
+/* 清除默认边距 */
+body {
+  margin: 0;
+  padding: 0;
+}
+
+/* 修复element-plus容器边框问题 */
+.el-container {
+  border: 1px solid #ebeef5;
+  box-sizing: border-box;
+}
+
+.el-header {
+  display: flex;
+  align-items: center;
+}
+
+:root {
+  --primary-color: #2c6ecb; /* 深蓝色 - 提高对比度 */
+  --secondary-color: #495057; /* 深灰色 - 提高可读性 */
+  --success-color: #28a745;
+  --danger-color: #dc3545;
+  --text-color: #212529; /* 深色文本 - 提高对比度 */
+  --background-color: #ffffff;
+  --border-color: #dee2e6;
+  --border-radius: 8px;
+}
+
+/* 文本颜色和背景对比度优化 */
+body {
+  color: var(--text-color);
+  background-color: var(--background-color);
+  line-height: 1.6;
+}
+
+/* 链接样式优化 */
+a {
+  color: var(--primary-color);
+}
+
+a:hover {
+  color: #1a56b8;
+  background-color: rgba(44, 110, 203, 0.1);
+}
+
+/* 按钮样式优化 */
+.el-button--primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.el-button--primary:hover {
+  background-color: #1a56b8;
+  border-color: #1a56b8;
+}
+
+/* 卡片样式优化 */
+.el-card {
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* 基础布局优化 */
+body {
+  font-family: 'Arial', sans-serif;
+  line-height: 1.6;
+  color: #212529;
+}
+
+/* 容器阴影增强 */
+.el-card {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  transition: box-shadow 0.3s ease;
+}
+
+.el-card:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* 表格间距优化 */
+.el-table {
+  margin: 20px 0;
+}
+
+.el-table__header th {
+  background-color: #f8f9fa !important;
+}
+
+/* 表单元素增强 */
+.el-form-item__label {
+  font-weight: 500;
+  color: var(--secondary-color);
+}
+
+.el-input__inner {
+  border-radius: var(--border-radius) !important;
+}
+
+/* 按钮统一风格 */
+.el-button {
+  border-radius: var(--border-radius);
+  padding: 12px 24px;
+}
+
+/* 响应式断点 */
+@media (min-width: 2048px) {
+  .el-container {
+    margin: 0 auto;
+  }
+}
+
+/* 表格间距优化 */
+.el-table {
+  margin: 20px 0;
+}
+
+.el-table__header th {
+  background-color: #f8f9fa !important;
+}
+
+/* 表单元素增强 */
+.el-form-item__label {
+  font-weight: 500;
+  color: var(--secondary-color);
+}
+
+.el-input__inner {
+  border-radius: var(--border-radius) !important;
+}
+
+/* 按钮统一风格 */
+.el-button {
+  border-radius: var(--border-radius);
+  padding: 12px 24px;
+}
+
+/* 响应式断点 */
+@media (min-width: 1200px) {
+  .el-container {
+    margin: 0 auto;
+  }
+}
+
+/* 表格间距优化 */
+.el-table {
+  margin: 20px 0;
+}
+
+.el-table__header th {
+  background-color: #f8f9fa !important;
+}
+
+/* 响应式布局优化 */
+@media (max-width: 768px) {
+  .el-container {
+    flex-direction: column;
+  }
+
+  .el-aside {
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  .table-card {
+    overflow-x: auto;
+  }
+
+  .el-form .el-row {
+    flex-direction: column;
+  }
+
+  .el-form .el-col {
+    width: 100% !important;
+    margin-bottom: 15px;
+  }
+}
+
+/* 中等屏幕适配 */
+@media (min-width: 769px) and (max-width: 2048px) {
+  .el-table-column {
+    min-width: 80px !important;
+  }
+}
