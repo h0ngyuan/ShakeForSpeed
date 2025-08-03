@@ -1,117 +1,103 @@
 <template>
   <view class="rank-container">
-    <!-- 顶部标题 -->
-    <view class="header">
-      <text class="title">排行榜</text>
-    </view>
-    
-    <!-- 用户当前排名 -->
-    <view class="user-rank" v-if="userRank">
-      <view class="rank-info">
-        <text class="rank-text">我的排名</text>
-        <text class="rank-number">{{ userRank.rank }}</text>
-      </view>
-      <view class="user-info">
-        <UserInfo :userInfo="userRank" />
-      </view>
-      <view class="score">
-        <text>{{ userRank.score }}次</text>
+    <!-- 页面头部 -->
+    <view class="rank-header">
+      <text class="header-title">排行榜</text>
+      <view class="header-actions">
+        <button class="action-btn primary" @click="backToHome">返回首页</button>
       </view>
     </view>
     
     <!-- 排行榜列表 -->
     <view class="rank-list">
       <view 
-        class="rank-item" 
-        :class="{ 'top-three': item.rank <= 3, 'first': item.rank === 1, 'second': item.rank === 2, 'third': item.rank === 3 }"
-        v-for="item in rankings" 
-        :key="item.id"
+        v-for="(item, index) in rankList" 
+        :key="item.id" 
+        class="rank-item"
+        :class="{ 'top-three': index < 3 }"
       >
-        <view class="rank-number">{{ item.rank }}</view>
-        <image :src="item.avatarUrl" class="avatar"></image>
-        <view class="user-info">
-          <text class="nickname">{{ item.nickName }}</text>
+        <view class="rank-number">
+          <text v-if="index < 3" class="medal">{{ getMedal(index) }}</text>
+          <text v-else class="number">{{ index + 1 }}</text>
         </view>
-        <view class="score">{{ item.score }}次</view>
+        <view class="user-info">
+          <image :src="item.avatar" class="user-avatar" mode="aspectFill"></image>
+          <view class="user-details">
+            <text class="user-name">{{ item.name }}</text>
+            <text class="user-score">得分: {{ item.score }}</text>
+          </view>
+        </view>
+        <view class="user-time">
+          <text class="time-label">用时:</text>
+          <text class="time-value">{{ item.time }}s</text>
+        </view>
+      </view>
+      
+      <!-- 空状态 -->
+      <view v-if="rankList.length === 0" class="empty-state">
+        <text class="empty-text">暂无排名数据</text>
       </view>
     </view>
-    
-    <!-- 返回首页按钮 -->
-    <button class="back-btn" @click="goHome">返回首页</button>
   </view>
 </template>
 
 <script>
-import UserInfo from '../../components/UserInfo.vue';
-// 导入API函数
-import { getRankings } from '../../api/mock.js';
-
 export default {
-  components: {
-    UserInfo
-  },
   data() {
     return {
-      rankings: [],
-      userInfo: {
-        id: 1,
-        nickName: '默认用户',
-        avatarUrl: '/static/avatar/default.png'
-      },
-      userRank: null
+      rankList: [
+        {
+          id: 1,
+          name: '张三',
+          avatar: '/static/avatar1.png',
+          score: 120,
+          time: '8.5'
+        },
+        {
+          id: 2,
+          name: '李四',
+          avatar: '/static/avatar2.png',
+          score: 110,
+          time: '9.2'
+        },
+        {
+          id: 3,
+          name: '王五',
+          avatar: '/static/avatar3.png',
+          score: 105,
+          time: '9.8'
+        },
+        {
+          id: 4,
+          name: '赵六',
+          avatar: '/static/avatar4.png',
+          score: 98,
+          time: '10.1'
+        },
+        {
+          id: 5,
+          name: '孙七',
+          avatar: '/static/avatar5.png',
+          score: 92,
+          time: '10.5'
+        }
+      ]
     };
   },
-  
-  // 页面加载时获取排行榜数据
-  onLoad(options) {
-    console.log('排行榜页面加载，参数:', options);
-    // 解析传递过来的用户信息
-    if (options && options.userInfo) {
-      try {
-        this.userInfo = JSON.parse(decodeURIComponent(options.userInfo));
-        console.log('解析用户信息成功:', this.userInfo);
-      } catch (e) {
-        console.error('解析用户信息失败', e);
-      }
-    }
-    this.fetchRankings();
+  onLoad() {
+    // 页面加载时可以获取真实数据
+    // this.fetchRankList();
   },
-  
   methods: {
-    // 获取排行榜数据
-    async fetchRankings() {
-      try {
-        // 调用API获取排行榜数据
-          const result = await getRankings();
-        
-        if (result.success) {
-          this.rankings = result.data;
-          
-          // 查找当前用户排名
-          const userRanking = this.rankings.find(item => item.id === this.userInfo.id);
-          this.userRank = userRanking || null;
-        }
-      } catch (error) {
-        console.error('获取排行榜失败', error);
-        
-        // 如果模拟API调用失败，使用默认数据，并确保包含当前用户信息
-        this.rankings = [
-          { id: this.userInfo.id, nickName: this.userInfo.nickName, avatarUrl: this.userInfo.avatarUrl, score: 100, rank: 1 },
-          { id: 2, nickName: '张三', avatarUrl: '/static/avatar/avatar1.png', score: 95, rank: 2 },
-          { id: 3, nickName: '李四', avatarUrl: '/static/avatar/avatar2.png', score: 88, rank: 3 },
-          { id: 4, nickName: '王五', avatarUrl: '/static/avatar/avatar3.png', score: 82, rank: 4 },
-          { id: 5, nickName: '赵六', avatarUrl: '/static/avatar/avatar4.png', score: 76, rank: 5 }
-        ];
-        
-        // 查找当前用户排名
-        const userRanking = this.rankings.find(item => item.id === this.userInfo.id);
-        this.userRank = userRanking || null;
-      }
+    // 获取奖牌图标
+    getMedal(index) {
+      const medals = ['🥇', '🥈', '🥉'];
+      return medals[index];
     },
     
     // 返回首页
-    goHome() {
-      uni.redirectTo({
+    backToHome() {
+      wx.switchTab({
         url: '/pages/index/index'
       });
     }
@@ -122,188 +108,145 @@ export default {
 <style scoped>
 .rank-container {
   min-height: 100vh;
-  background-color: #f5f5f5;
-  padding: 20px;
-  box-sizing: border-box;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20rpx;
+  display: flex;
+  flex-direction: column;
 }
 
-.header {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-.title {
-  font-size: 28px;
-  font-weight: bold;
-  color: #333;
-}
-
-.user-rank {
+.rank-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 15px;
-  padding: 20px;
-  margin-bottom: 30px;
-  color: white;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  padding: 20rpx;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 15rpx;
+  margin-bottom: 30rpx;
 }
 
-.rank-info {
+.header-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #fff;
+}
+
+.header-actions {
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  gap: 10rpx;
 }
 
-.rank-text {
-  font-size: 16px;
-  margin-bottom: 5px;
-}
-
-.rank-number {
-  font-size: 24px;
+.action-btn {
+  background: #fff;
+  color: #333;
+  border: none;
+  padding: 10rpx 20rpx;
+  border-radius: 25rpx;
+  font-size: 24rpx;
   font-weight: bold;
 }
 
-.user-info {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .user-info ::v-deep .user-avatar {
-    width: 60px;
-    height: 60px;
-    margin-bottom: 10px;
-    border: 2px solid white;
-  }
-  
-  .user-info ::v-deep .user-name {
-    font-size: 16px;
-    font-weight: bold;
-  }
-
-.score {
-  font-size: 20px;
-  font-weight: bold;
+.action-btn.primary {
+  background: #3498db;
+  color: #fff;
 }
 
 .rank-list {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 20rpx;
 }
 
 .rank-item {
   display: flex;
   align-items: center;
-  background-color: #fff;
-  border-radius: 15px;
-  padding: 15px;
-  width: 100%;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  padding: 20rpx;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 15rpx;
+  box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.1);
 }
 
-/* 前三名样式 */
-.rank-item.first {
-  flex-direction: column;
-  width: 30%;
-  padding: 20px 10px 15px;
-  /* 第一名背景渐变 */
-  background: linear-gradient(135deg, #FFD700, #FFFACD);
-  color: #333;
-}
-
-.rank-item.second {
-  flex-direction: column;
-  width: 28%;
-  padding: 15px 10px 10px;
-  margin-top: 20px;
-  /* 第二名背景渐变 */
-  background: linear-gradient(135deg, #C0C0C0, #E8E8E8);
-  color: #333;
-}
-
-.rank-item.third {
-  flex-direction: column;
-  width: 28%;
-  padding: 15px 10px 10px;
-  margin-top: 40px;
-  /* 第三名背景渐变 */
-  background: linear-gradient(135deg, #CD7F32, #F0E68C);
-  color: #333;
+.rank-item.top-three {
+  background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
 }
 
 .rank-number {
-  font-size: 22px;
+  width: 80rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.medal {
+  font-size: 40rpx;
+}
+
+.number {
+  font-size: 32rpx;
   font-weight: bold;
-  margin-right: 15px;
-  color: #888;
-  min-width: 30px;
-  text-align: center;
-}
-
-.rank-item.first .rank-number,
-.rank-item.second .rank-number,
-.rank-item.third .rank-number {
   color: #333;
-  margin-right: 0;
-  margin-bottom: 10px;
 }
 
-.rank-item .avatar {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  margin-right: 15px;
-}
-
-.rank-item.first .avatar,
-.rank-item.second .avatar,
-.rank-item.third .avatar {
-  margin-right: 0;
-  margin-bottom: 10px;
-}
-
-.rank-item .user-info {
+.user-info {
   flex: 1;
   display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.user-avatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  border: 2rpx solid #fff;
+  box-shadow: 0 2rpx 5rpx rgba(0, 0, 0, 0.1);
+}
+
+.user-details {
+  display: flex;
   flex-direction: column;
+  gap: 5rpx;
 }
 
-.rank-item .nickname {
-  font-size: 16px;
-  color: #333;
-}
-
-.rank-item.first .nickname,
-.rank-item.second .nickname,
-.rank-item.third .nickname {
-  color: #333;
-  margin-bottom: 5px;
-}
-
-.rank-item .score {
-  font-size: 18px;
+.user-name {
+  font-size: 28rpx;
   font-weight: bold;
-  color: #ff4d4f;
-}
-
-.rank-item.first .score,
-.rank-item.second .score,
-.rank-item.third .score {
   color: #333;
 }
 
-.back-btn {
-  width: 100%;
-  height: 50px;
-  background-color: #333;
-  color: white;
-  border-radius: 25px;
-  font-size: 18px;
-  border: none;
-  margin-top: 30px;
+.user-score {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.user-time {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5rpx;
+}
+
+.time-label {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.time-value {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #3498db;
+}
+
+.empty-state {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.empty-text {
+  font-size: 32rpx;
+  color: #fff;
+  font-weight: bold;
 }
 </style>

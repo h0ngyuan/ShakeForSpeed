@@ -17,7 +17,7 @@
         <text>请授权获取用户信息，以便参与游戏排名</text>
       </view>
       <button class="auth-btn" open-type="getUserInfo" @getuserinfo="onGetUserInfo">
-        <image class="auth-btn-icon" src="/static/user_auth.png"></image>
+        <image class="auth-btn-icon" src="/static/avatar/default.png"></image>
         <text class="auth-btn-text">授权并登录</text>
       </button>
       <view class="auth-tip">
@@ -74,20 +74,28 @@
       </view>
     </view>
 
+    <!-- 隐私政策弹窗 -->
+    <privacy-popup 
+      :show="showPrivacyPopup" 
+      @agree="handlePrivacyAgree" 
+      @disagree="handlePrivacyDisagree"
+    />
 
   </view>
 </template>
 
 <script>
 import UserInfo from '../../components/UserInfo.vue';
+import PrivacyPopup from '../../components/privacyPopup/privacyPopup.vue';
 // 导入API函数
-import { getDefaultUser } from '../../api/mock.js';
+
 
 const defaultAvatarUrl = 'https://mmbiz.qpic.cn/mmbiz/icTdbqWNOwNRna42FI242Lcia07jQodd2FJGIYQfG0LAJGFxM4FbnQP6yfMxBgJ0F3YRqJCJ1aPAK2dQagdusBZg/0'
 
 export default {
   components: {
-    UserInfo
+    UserInfo,
+    PrivacyPopup
   },
   data() {
       return {
@@ -107,13 +115,14 @@ export default {
         loading: false,
         roomNumber: '',
         showPermissionPopup: true, // 默认显示权限说明弹窗
+        showPrivacyPopup: true, // 默认显示隐私政策弹窗
         currentTab: 'participate' // 当前选中的标签页，默认为参与模块
 
       };
   },
   onLoad() {
     // 从本地存储读取用户信息
-    const storedUserInfo = uni.getStorageSync('userInfo');
+    const storedUserInfo = wx.getStorageSync('userInfo');
     if (storedUserInfo) {
       this.userInfo = storedUserInfo;
     }
@@ -125,7 +134,7 @@ export default {
   methods: {
     // 检查用户信息权限
     checkUserInfoPermission() {
-      uni.getSetting({
+      wx.getSetting({
         success: (res) => {
           if (res.authSetting['scope.userInfo']) {
             this.hasUserInfoPermission = true;
@@ -140,14 +149,14 @@ export default {
 
     // 获取用户信息
     getUserInfo() {
-      uni.getUserInfo({
+      wx.getUserInfo({
         success: (res) => {
           this.userInfo = {
             id: 1, // 模拟ID
             nickName: res.userInfo.nickName,
             avatarUrl: res.userInfo.avatarUrl
           };
-          uni.setStorageSync('userInfo', this.userInfo);
+          wx.setStorageSync('userInfo', this.userInfo);
         }
       });
     },
@@ -162,11 +171,11 @@ export default {
           nickName: e.detail.userInfo.nickName,
           avatarUrl: e.detail.userInfo.avatarUrl
         };
-        uni.setStorageSync('userInfo', this.userInfo);
+        wx.setStorageSync('userInfo', this.userInfo);
         this.showPermissionPopup = false;
       } else {
         // 用户拒绝授权
-        uni.showToast({
+        wx.showToast({
           title: '需要授权才能继续',
           icon: 'none'
         });
@@ -177,12 +186,12 @@ export default {
 
       switchTab(tabName) {
         // 如果点击的是个人页面标签，则跳转到新的个人页面
-        if (tabName === 'profile') {
-          uni.switchTab({
-            url: 'pages/myprofile/myprofile'
-          });
-          return;
-        }
+      if (tabName === 'profile') {
+        wx.switchTab({
+          url: 'pages/myprofile/myprofile'
+        });
+        return;
+      }
 
         this.currentTab = tabName;
         console.log('切换到标签:', tabName, '当前值:', this.currentTab); // 添加更详细的调试日志
@@ -192,15 +201,30 @@ export default {
 
       // 直接跳转到个人页面
       directToProfile() {
-        uni.navigateTo({
+        wx.navigateTo({
           url: '/pages/myprofile/myprofile'
         });
         console.log('尝试直接跳转到个人页面');
       },
+      
+      // 隐私政策同意
+      handlePrivacyAgree() {
+        this.showPrivacyPopup = false;
+        wx.showToast({
+          title: '感谢您的同意',
+          icon: 'success',
+          duration: 2000
+        });
+      },
+      
+      // 隐私政策不同意
+      handlePrivacyDisagree() {
+        this.showPrivacyPopup = true;
+      },
 
       // 跳转到用户页面
       goToUserPage() {
-        uni.navigateTo({
+        wx.navigateTo({
           url: '/pages/user/user'
         });
         console.log('尝试跳转到用户页面');
@@ -208,25 +232,19 @@ export default {
 
       // 跳转到账户页面
       goToAccountPage() {
-        uni.navigateTo({
+        wx.navigateTo({
           url: '/pages/account/account'
         });
         console.log('尝试跳转到账户页面');
       },
       
-    
     // 确认权限说明
     confirmPermissions() {
       this.showPermissionPopup = false;
-    },
-
-    // 检查并申请传感器权限
-    checkAndApplySensorPermission() {
-      if (!this.hasSensorPermission) {
-        // 调用App.vue中的请求传感器权限方法
-        const app = getApp();
-        app.requestSensorAuth();
-      }
+      wx.showToast({
+        title: '您可以稍后在设置中授权',
+        icon: 'none'
+      });
     },
     
     // 模拟授权流程
@@ -237,7 +255,7 @@ export default {
       // 模拟API调用获取默认用户
       try {
         // 使用绝对路径引用，避免相对路径在不同环境下的解析问题
-        const result = await getDefaultUser();
+        const result = await this.$mockAPI.getDefaultUser();
         
         if (result.success) {
           this.userInfo = result.data;
@@ -248,7 +266,7 @@ export default {
           console.log('模拟授权成功', this.userInfo);
           
           // 显示模拟授权成功提示
-          uni.showToast({
+          wx.showToast({
             title: '模拟授权成功',
             icon: 'success',
             duration: 2000
@@ -279,7 +297,7 @@ export default {
       this.hasLocationPermission = true;
       this.canStartGame = true;
       
-      uni.showToast({
+      wx.showToast({
         title: '使用默认用户信息',
         icon: 'none',
         duration: 2000
@@ -288,7 +306,7 @@ export default {
 
     // 检查权限
     checkPermissions() {
-      uni.getSetting({
+      wx.getSetting({
         success: (res) => {
           // 检查用户信息权限
           this.hasUserInfoPermission = res.authSetting['scope.userInfo'] || false;
@@ -303,7 +321,7 @@ export default {
             this.showPermissionPopup = true;
           } else {
             // 所有权限都已获取，显示欢迎信息
-            uni.showToast({
+            wx.showToast({
               title: '欢迎使用ShakeForSpeed',
               icon: 'success',
               duration: 2000
@@ -315,7 +333,7 @@ export default {
         },
         fail: (err) => {
           console.error('检查权限失败', err);
-          uni.showToast({
+          wx.showToast({
             title: '权限检查失败',
             icon: 'none'
           });
@@ -330,31 +348,31 @@ export default {
     },
 
     // 确认用户信息
-    confirmUserInfo() {
-      if (!this.nickname) {
-        uni.showToast({
-          title: '请输入昵称',
-          icon: 'none'
+      confirmUserInfo() {
+        if (!this.nickname) {
+          wx.showToast({
+            title: '请输入昵称',
+            icon: 'none'
+          });
+          return;
+        }
+
+        this.userInfo = {
+          id: Date.now(), // 使用时间戳作为简单ID
+          avatarUrl: this.avatarUrl,
+          nickName: this.nickname
+        };
+        // 保存用户信息到本地存储
+        wx.setStorageSync('userInfo', this.userInfo);
+
+        wx.showToast({
+          title: '用户信息设置成功',
+          icon: 'success'
         });
-        return;
-      }
 
-      this.userInfo = {
-        id: Date.now(), // 使用时间戳作为简单ID
-        avatarUrl: this.avatarUrl,
-        nickName: this.nickname
-      };
-      // 保存用户信息到本地存储
-      uni.setStorageSync('userInfo', this.userInfo);
-
-      uni.showToast({
-        title: '用户信息设置成功',
-        icon: 'success'
-      });
-
-      // 继续申请其他权限
-      this.checkAndApplySensorPermission();
-    },
+        // 继续申请其他权限
+        this.checkAndApplySensorPermission();
+      },
 
     // 确认权限
     confirmPermissions() {
@@ -369,7 +387,7 @@ export default {
           this.handleGetUserInfo();
         } else {
           // 如果没有设置用户信息，显示提示
-          uni.showToast({
+          wx.showToast({
             title: '请先设置头像和昵称',
             icon: 'none',
             duration: 2000
@@ -398,15 +416,15 @@ export default {
         return;
       }
 
-      // 先检查是否已授权运动传感器权限
-      uni.getSetting({
+      // 先检查是否已授权加速度传感器权限
+      wx.getSetting({
         success: (res) => {
-          const hasActivityRecognition = res.authSetting['scope.activityRecognition'] || false;
+          const hasAccelerometer = res.authSetting['scope.accelerometer'] || false;
 
-          if (hasActivityRecognition) {
+          if (hasAccelerometer) {
             this.hasSensorPermission = true;
-            uni.showToast({
-              title: '运动传感器权限已获取',
+            wx.showToast({
+              title: '加速度传感器权限已获取',
               icon: 'success',
               duration: 2000
             });
@@ -414,79 +432,79 @@ export default {
             return;
           }
 
-          // 未授权，申请运动传感器权限
-          uni.authorize({
-            scope: 'scope.accelerometer',
-            success: () => {
-              this.hasSensorPermission = true;
-              uni.showToast({
-                title: '运动传感器权限已获取',
-                icon: 'success',
-                duration: 2000
-              });
-              this.checkAndApplyLocationPermission();
-            },
-            fail: (err) => {
-              console.error('运动传感器权限申请失败:', err);
-              // 更全面的失败判断
-              if (err.errMsg && (err.errMsg.includes('deny') || err.errMsg.includes('fail auth deny') || err.errMsg.includes('cancel'))) {
-                uni.showModal({
-                  title: '权限申请提醒',
-                  content: '需要运动传感器权限才能游戏，请前往设置开启权限',
-                  confirmText: '去设置',
-                  cancelText: '取消',
-                  success: (modalRes) => {
-                    if (modalRes.confirm) {
-                      uni.openSetting({
-                        success: () => {
-                          // 设置页面返回后重新检查权限
-                          uni.getSetting({
-                            success: (newRes) => {
-                              const newAccelerometer = newRes.authSetting['scope.accelerometer'] || false;
-              if (newAccelerometer) {
-                                this.hasSensorPermission = true;
-                                uni.showToast({
-                                  title: '传感器权限已获取',
-                                  icon: 'success',
-                                  duration: 2000
-                                });
-                                this.checkAndApplyLocationPermission();
-                              } else {
-                                uni.showToast({
-                                  title: '请开启运动传感器权限',
-                                  icon: 'none',
-                                  duration: 2000
-                                });
-                                this.showPermissionPopup = true;
-                              }
+          // 未授权，申请加速度传感器权限
+          wx.authorize({
+                scope: 'scope.accelerometer',
+                success: () => {
+                  this.hasSensorPermission = true;
+                  wx.showToast({
+                    title: '加速度传感器权限已获取',
+                    icon: 'success',
+                    duration: 2000
+                  });
+                  this.checkAndApplyLocationPermission();
+                },
+                fail: (err) => {
+                  console.error('运动传感器权限申请失败:', err);
+                  // 更全面的失败判断
+                  if (err.errMsg && (err.errMsg.includes('deny') || err.errMsg.includes('fail auth deny') || err.errMsg.includes('cancel'))) {
+                    wx.showModal({
+                      title: '权限申请提醒',
+                      content: '需要加速度传感器权限才能游戏，请前往设置开启权限',
+                      confirmText: '去设置',
+                      cancelText: '取消',
+                      success: (modalRes) => {
+                        if (modalRes.confirm) {
+                          wx.openSetting({
+                            success: () => {
+                              // 设置页面返回后重新检查权限
+                              wx.getSetting({
+                                success: (newRes) => {
+                                  const newAccelerometer = newRes.authSetting['scope.accelerometer'] || false;
+                  if (newAccelerometer) {
+                                    this.hasSensorPermission = true;
+                                    wx.showToast({
+                                      title: '加速度传感器权限已获取',
+                                      icon: 'success',
+                                      duration: 2000
+                                    });
+                                    this.checkAndApplyLocationPermission();
+                                  } else {
+                                    wx.showToast({
+                                      title: '请开启加速度传感器权限',
+                                      icon: 'none',
+                                      duration: 2000
+                                    });
+                                    this.showPermissionPopup = true;
+                                  }
+                                },
+                                fail: () => {
+                                  this.showPermissionPopup = true;
+                                }
+                              });
                             },
                             fail: () => {
                               this.showPermissionPopup = true;
                             }
                           });
-                        },
-                        fail: () => {
+                        } else {
                           this.showPermissionPopup = true;
                         }
-                      });
-                    } else {
-                      this.showPermissionPopup = true;
-                    }
-                  },
-                  fail: () => {
+                      },
+                      fail: () => {
+                        this.showPermissionPopup = true;
+                      }
+                    });
+                  } else {
+                    wx.showToast({
+                      title: '加速度传感器权限申请失败',
+                      icon: 'none',
+                      duration: 2000
+                    });
                     this.showPermissionPopup = true;
                   }
-                });
-              } else {
-                uni.showToast({
-                  title: '传感器权限申请失败',
-                  icon: 'none',
-                  duration: 2000
-                });
-                this.showPermissionPopup = true;
-              }
-            }
-          });
+                }
+              });
         },
         fail: (err) => {
           console.error('获取设置失败:', err);
@@ -503,13 +521,13 @@ export default {
       }
 
       // 先检查是否已授权位置权限
-      uni.getSetting({
+      wx.getSetting({
         success: (res) => {
           const hasLocation = res.authSetting['scope.userLocation'] || false;
 
           if (hasLocation) {
             this.hasLocationPermission = true;
-            uni.showToast({
+            wx.showToast({
               title: '位置权限已获取',
               icon: 'success',
               duration: 2000
@@ -519,11 +537,11 @@ export default {
           }
 
           // 未授权，申请位置权限
-          uni.authorize({
+          wx.authorize({
             scope: 'scope.userLocation',
             success: () => {
               this.hasLocationPermission = true;
-              uni.showToast({
+              wx.showToast({
                 title: '位置权限已获取',
                 icon: 'success',
                 duration: 2000
@@ -534,29 +552,29 @@ export default {
               console.error('位置权限申请失败:', err);
               // 更全面的失败判断
               if (err.errMsg && (err.errMsg.includes('deny') || err.errMsg.includes('fail auth deny') || err.errMsg.includes('cancel'))) {
-                uni.showModal({
+                wx.showModal({
                   title: '权限申请提醒',
                   content: '需要位置权限才能参与区域排名，请前往设置开启权限',
                   confirmText: '去设置',
                   cancelText: '取消',
                   success: (modalRes) => {
                     if (modalRes.confirm) {
-                      uni.openSetting({
+                      wx.openSetting({
                         success: () => {
                           // 设置页面返回后重新检查权限
-                          uni.getSetting({
+                          wx.getSetting({
                             success: (newRes) => {
                               const newLocation = newRes.authSetting['scope.userLocation'] || false;
                               if (newLocation) {
                                 this.hasLocationPermission = true;
-                                uni.showToast({
+                                wx.showToast({
                                   title: '位置权限已获取',
                                   icon: 'success',
                                   duration: 2000
                                 });
                                 this.startGame();
                               } else {
-                                uni.showToast({
+                                wx.showToast({
                                   title: '请开启位置权限',
                                   icon: 'none',
                                   duration: 2000
@@ -582,7 +600,7 @@ export default {
                   }
                 });
               } else {
-                uni.showToast({
+                wx.showToast({
                   title: '位置权限申请失败',
                   icon: 'none',
                   duration: 2000
@@ -602,7 +620,7 @@ export default {
     // 进入房间
     joinRoom() {
       if (!this.roomNumber) {
-        uni.showToast({
+        wx.showToast({
           title: '请输入房间号',
           icon: 'none'
         });
@@ -611,7 +629,7 @@ export default {
       
       // 验证房间号，暂时模拟只有一个房间"111111"
       if (this.roomNumber !== '111111') {
-        uni.showToast({
+        wx.showToast({
           title: '无此房间',
           icon: 'none'
         });
@@ -619,14 +637,40 @@ export default {
       }
       
       // 跳转到游戏页面，并传递用户信息
-      uni.navigateTo({
+      wx.navigateTo({
         url: '/pages/game/game?userInfo=' + encodeURIComponent(JSON.stringify(this.userInfo))
       });
     },
     
     startGame() {
+      // 检查是否有传感器权限
+      if (!this.hasSensorPermission) {
+        console.log('没有传感器权限，无法开始游戏');
+        wx.showToast({
+          title: '需要传感器权限才能开始游戏',
+          icon: 'none',
+          duration: 2000
+        });
+        // 引导用户手动授权
+        setTimeout(() => {
+          wx.showModal({
+            title: '权限申请',
+            content: '需要加速度传感器权限才能游戏，请前往设置开启',
+            confirmText: '去设置',
+            cancelText: '取消',
+            success: (res) => {
+              if (res.confirm) {
+                console.log('用户前往设置页面');
+                wx.openSetting();
+              }
+            }
+          });
+        }, 2000);
+        return;
+      }
+      
       // 跳转到游戏页面，并传递用户信息
-      uni.navigateTo({
+      wx.navigateTo({
         url: '/pages/game/game?userInfo=' + encodeURIComponent(JSON.stringify(this.userInfo))
       });
     },

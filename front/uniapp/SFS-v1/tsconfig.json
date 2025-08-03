@@ -29,10 +29,8 @@
     "globalTypesPath": "./shims-uni-app.d.ts"
   },
   "include": [
-    "./pages/**/*.vue",
     "./main.js",
     "./api/**/*.js",
-    "./components/**/*.vue",
     "./shims-vue.d.ts",
     "./App.vue"
   ],

@@ -33,7 +33,8 @@
                     "<uses-permission android:name=\"android.permission.WAKE_LOCK\"/>",
                     "<uses-permission android:name=\"android.permission.FLASHLIGHT\"/>",
                     "<uses-feature android:name=\"android.hardware.camera\"/>",
-                    "<uses-permission android:name=\"android.permission.WRITE_SETTINGS\"/>"
+                    "<uses-permission android:name=\"android.permission.WRITE_SETTINGS\"/>",
+                    "<uses-permission android:name=\"android.permission.ACCELEROMETER\"/>"
                 ]
             },
             "ios" : {},
@@ -59,7 +60,7 @@
                 "desc": "用于检测手机加速度变化，实现摇一摇功能"
             }
         },
-        "requiredPrivateInfos": ["motion"]
+        "requiredPrivateInfos": ["accelerometer"]
     },
     "mp-alipay" : {
         "usingComponents" : true
