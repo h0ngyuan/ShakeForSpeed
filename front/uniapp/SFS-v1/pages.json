@@ -37,15 +37,7 @@
         "backgroundColor": "#F5F5F5"
       }
     },
-    {
-      "path": "pages/test/test",
-      "style": {
-        "navigationBarTitleText": "测试页面",
-        "navigationBarTextStyle": "black",
-        "navigationBarBackgroundColor": "#FFFFFF",
-        "backgroundColor": "#F5F5F5"
-      }
-    },
+
     {
       "path": "pages/user/user",
       "style": {

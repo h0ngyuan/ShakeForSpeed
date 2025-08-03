@@ -74,28 +74,23 @@
       </view>
     </view>
 
-    <!-- 隐私政策弹窗 -->
-    <privacy-popup 
-      :show="showPrivacyPopup" 
-      @agree="handlePrivacyAgree" 
-      @disagree="handlePrivacyDisagree"
-    />
+    <!-- 隐私政策弹窗 (已移除，因为组件不存在) -->
 
   </view>
 </template>
 
 <script>
 import UserInfo from '../../components/UserInfo.vue';
-import PrivacyPopup from '../../components/privacyPopup/privacyPopup.vue';
+
 // 导入API函数
+import { getDefaultUser } from '../../api/mock.js';
 
 
 const defaultAvatarUrl = 'https://mmbiz.qpic.cn/mmbiz/icTdbqWNOwNRna42FI242Lcia07jQodd2FJGIYQfG0LAJGFxM4FbnQP6yfMxBgJ0F3YRqJCJ1aPAK2dQagdusBZg/0'
 
 export default {
   components: {
-    UserInfo,
-    PrivacyPopup
+    UserInfo
   },
   data() {
       return {
@@ -115,7 +110,7 @@ export default {
         loading: false,
         roomNumber: '',
         showPermissionPopup: true, // 默认显示权限说明弹窗
-        showPrivacyPopup: true, // 默认显示隐私政策弹窗
+        showPrivacyPopup: false, // 隐私政策弹窗已移除
         currentTab: 'participate' // 当前选中的标签页，默认为参与模块
 
       };
@@ -207,21 +202,6 @@ export default {
         console.log('尝试直接跳转到个人页面');
       },
       
-      // 隐私政策同意
-      handlePrivacyAgree() {
-        this.showPrivacyPopup = false;
-        wx.showToast({
-          title: '感谢您的同意',
-          icon: 'success',
-          duration: 2000
-        });
-      },
-      
-      // 隐私政策不同意
-      handlePrivacyDisagree() {
-        this.showPrivacyPopup = true;
-      },
-
       // 跳转到用户页面
       goToUserPage() {
         wx.navigateTo({
@@ -255,7 +235,7 @@ export default {
       // 模拟API调用获取默认用户
       try {
         // 使用绝对路径引用，避免相对路径在不同环境下的解析问题
-        const result = await this.$mockAPI.getDefaultUser();
+        const result = await getDefaultUser();
         
         if (result.success) {
           this.userInfo = result.data;

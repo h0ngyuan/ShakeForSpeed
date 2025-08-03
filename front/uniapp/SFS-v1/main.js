@@ -17,6 +17,8 @@ app.$mount()
 import { createSSRApp } from 'vue'
 export function createApp() {
   const app = createSSRApp(App)
+  // 挂载mockAPI到全局属性
+  app.config.globalProperties.$mockAPI = mockAPI
   return {
     app
   }
