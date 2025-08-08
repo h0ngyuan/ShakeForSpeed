@@ -61,6 +61,18 @@ const routes: Array<RouteRecordRaw> = [
             component: () => import('@/views/admin/UserManagementView.vue')
           }
         ]
+      },
+      // 商户路由组
+      {
+        path: '/merchant',
+        redirect: '/merchant/home',
+        children: [
+          {
+            path: 'home',
+            name: 'merchantHome',
+            component: () => import('@/views/merchant/HomeView.vue')
+          }
+        ]
       }
     ]
   },
@@ -77,15 +89,39 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from) => {
-  const isAdmin = localStorage.getItem('isAdmin') === 'true';
+  const username = localStorage.getItem('username');
+  const role = localStorage.getItem('role');
   
-  if (!localStorage.getItem('username') && to.name !== 'login') {
+  // 未登录且不是去登录页，则跳转到登录页
+  if (!username && to.name !== 'login') {
     return { name: 'login' }
   }
   
+  // 已登录且是去登录页，则根据角色跳转到对应主页
+  if (username && to.name === 'login') {
+    if (role === 'admin') {
+      return { name: 'adminHome' };
+    } else if (role === 'merchant') {
+      return { name: 'merchantHome' };
+    }
+  }
+  
   // 防止普通用户访问管理员页面
-  if ((to.name === 'adminHome' || to.name === 'dataView' || to.name === 'userManagement') && !isAdmin) {
-    return { name: 'home' }
+  if ((to.name === 'adminHome' || to.name === 'dataView' || to.name === 'userManagement') && role !== 'admin') {
+    if (role === 'merchant') {
+      return { name: 'merchantHome' };
+    } else {
+      return { name: 'login' };
+    }
+  }
+  
+  // 防止管理员和商户访问用户页面
+  if ((to.name === 'home' || to.name === 'tasks' || to.name === 'taskExecution' || to.name === 'taskLive' || to.name === 'taskResult') && role !== 'user') {
+    if (role === 'admin') {
+      return { name: 'adminHome' };
+    } else if (role === 'merchant') {
+      return { name: 'merchantHome' };
+    }
   }
 });
 

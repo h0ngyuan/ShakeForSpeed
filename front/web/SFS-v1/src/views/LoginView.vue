@@ -43,6 +43,7 @@
 <script setup lang="ts">
 import { reactive } from 'vue';
 import { useRouter } from 'vue-router';
+import axios from 'axios';
 
 const form = reactive({
   username: '',
@@ -51,15 +52,31 @@ const form = reactive({
 
 const router = useRouter();
 
-const handleLogin = () => {
-  if (form.username === 'admin' && form.password === '123456') {
-    localStorage.setItem('username', form.username);
-    localStorage.setItem('isAdmin', 'true');
-    router.push('/admin/home');
-  } else if (form.username === 'user' && form.password === '123456') {
-    localStorage.setItem('username', form.username);
-    localStorage.setItem('isAdmin', 'false');
-    router.push('/user/home');
+const handleLogin = async () => {
+  try {
+    const response = await axios.post('/api/auth/login', {
+      username: form.username,
+      password: form.password
+    });
+
+    if (response.data.success) {
+      // 登录成功，保存用户信息到localStorage
+      localStorage.setItem('username', form.username);
+      localStorage.setItem('role', response.data.role);
+      
+      // 根据角色跳转到不同主页
+      if (response.data.role === 'admin') {
+        router.push('/admin/home');
+      } else if (response.data.role === 'merchant') {
+        router.push('/merchant/home');
+      }
+    } else {
+      // 登录失败，显示错误信息
+      alert(response.data.message);
+    }
+  } catch (error) {
+    console.error('登录请求失败:', error);
+    alert('登录请求失败，请稍后重试');
   }
 };
 </script>
