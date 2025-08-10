@@ -14,7 +14,7 @@ public class AuthIntercepter implements HandlerInterceptor {
             return true;
         }
         HandlerMethod handlerMethod = (HandlerMethod) handler;
-
+        return true;
     }
 
 
