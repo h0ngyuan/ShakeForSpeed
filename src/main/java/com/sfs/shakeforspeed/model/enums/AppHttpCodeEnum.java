@@ -6,7 +6,8 @@ public enum AppHttpCodeEnum {
     SUCCESS(200,"操作成功"),
     // 登录段1~50
     NEED_LOGIN(1,"需要登录后操作"),
-    LOGIN_PASSWORD_ERROR(2,"密码错误"),
+    LOGIN_ERROR(2,"登录失败"),
+    LOGIN_OUT(3,"登出成功"),
     // TOKEN50~100
     TOKEN_INVALID(50,"无效的TOKEN"),
     TOKEN_EXPIRE(51,"TOKEN已过期"),
@@ -21,7 +22,7 @@ public enum AppHttpCodeEnum {
     SERVER_ERROR(503,"服务器内部错误"),
     // 数据错误 1000~2000
     DATA_EXIST(1000,"数据已经存在"),
-    AP_USER_DATA_NOT_EXIST(1001,"ApUser数据不存在"),
+    USER_DATA_NOT_EXIST(1001,"User数据不存在"),
     DATA_NOT_EXIST(1002,"数据不存在"),
     // 数据错误 3000~3500
     NO_OPERATOR_AUTH(3000,"无权限操作"),

@@ -2,11 +2,7 @@ package com.sfs.shakeforspeed.utils.result;
 
 import com.sfs.shakeforspeed.model.enums.AppHttpCodeEnum;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
-import org.springframework.data.relational.core.sql.In;
 import java.io.Serializable;
-import java.rmi.server.RemoteRef;
 
 @Data
 public class Result<T> implements Serializable {
@@ -60,7 +56,7 @@ public class Result<T> implements Serializable {
     }
 
     public static Result failResult(AppHttpCodeEnum enums){
-        return setCodeEnum(enums,enums.getErrorMessage());
+        return setCodeEnum(enums);
     }
 
     public static Result failResult(AppHttpCodeEnum enums, String errorMessage){
