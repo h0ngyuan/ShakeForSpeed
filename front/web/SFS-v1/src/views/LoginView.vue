@@ -43,7 +43,8 @@
 <script setup lang="ts">
 import { reactive } from 'vue';
 import { useRouter } from 'vue-router';
-import axios from 'axios';
+import type { Router } from 'vue-router';
+import apiClient from '@/utils/axiosConfig';
 
 const form = reactive({
   username: '',
@@ -54,25 +55,31 @@ const router = useRouter();
 
 const handleLogin = async () => {
   try {
-    const response = await axios.post('/api/auth/login', {
+    const response = await apiClient.post('/auth/login', {
       username: form.username,
       password: form.password
     });
 
-    if (response.data.success) {
+    if (response.data.code === 200) {
       // 登录成功，保存用户信息到localStorage
       localStorage.setItem('username', form.username);
-      localStorage.setItem('role', response.data.role);
+      localStorage.setItem('roleId', response.data.data.roleId.toString());
+      localStorage.setItem('token', response.data.data.token);
       
-      // 根据角色跳转到不同主页
-      if (response.data.role === 'admin') {
-        router.push('/admin/home');
-      } else if (response.data.role === 'merchant') {
-        router.push('/merchant/home');
+      // 根据roleId跳转到不同主页
+      if (response.data.data.roleId === 1) {
+        // 管理员角色
+        router.push({ name: 'admin-home' });
+      } else if (response.data.data.roleId === 2) {
+        // 商家角色
+        router.push({ name: 'merchant-home' });
+      } else {
+        // 普通用户角色
+        router.push({ name: 'user-home' });
       }
     } else {
       // 登录失败，显示错误信息
-      alert(response.data.message);
+      alert(response.data.msg || '登录失败，请检查账号密码');
     }
   } catch (error) {
     console.error('登录请求失败:', error);

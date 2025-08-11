@@ -28,7 +28,7 @@ const username = localStorage.getItem('username') || 'Guest';
 
 const handleLogout = () => {
   localStorage.removeItem('username');
-  localStorage.removeItem('isAdmin');
+  localStorage.removeItem('roleId');
   router.push('/login');
 };
 </script>

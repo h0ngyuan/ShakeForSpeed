@@ -12,7 +12,7 @@ public class User {
 
     @TableId(value = "id", type = IdType.AUTO)
     private int userId;
-    private int roleId;
+    private String role;
     private String username;
     private String password;
     private LocalDateTime updateTime;

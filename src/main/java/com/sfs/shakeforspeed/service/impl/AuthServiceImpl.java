@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service;
 public class AuthServiceImpl extends ServiceImpl<AuthMapper,User> implements AuthService  {
 
     @Autowired
-    private AuthService authService;
+    private AuthMapper authMapper;
 
 
     @Override
@@ -26,10 +26,11 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper,User> implements Aut
         if (userDTO==null){
             return Result.failResult(AppHttpCodeEnum.LOGIN_ERROR);
         }
+        System.out.println(userDTO);
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(User::getUserId,userDTO.getUserId())
+        queryWrapper.eq(User::getUsername,userDTO.getUsername())
                     .eq(User::getPassword,userDTO.getPassword());
-        User user = authService.getOne(queryWrapper);
+        User user = authMapper.selectOne(queryWrapper);
         if (user==null){
             return Result.failResult(AppHttpCodeEnum.USER_DATA_NOT_EXIST);
         }

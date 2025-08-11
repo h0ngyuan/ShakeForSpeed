@@ -14,8 +14,8 @@
 
 <style>
 .AdminAside { 
-  justify-content: center;
-  align-items: center;
-  width: 150px;
+  width: 200px;
+  height: 100%;
+  overflow-y: auto;
 }
 </style>

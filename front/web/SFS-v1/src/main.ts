@@ -4,7 +4,7 @@ import ElementPlus from 'element-plus';
 import 'element-plus/dist/index.css';
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs';
 import App from './App.vue';
-import router from './router/router';
+import router from './router';
 
 // 动态加载百度地图API
 const loadBaiduMap = () => {
@@ -20,6 +20,10 @@ const loadBaiduMap = () => {
 
 // 应用初始化
 async function initApp() {
+const app = createApp(App);
+app.use(ElementPlus, { locale: zhCn });
+app.use(router);
+
 try {
     // 加载百度地图API
     await loadBaiduMap();
@@ -27,10 +31,10 @@ try {
 } catch (error) {
     console.error('百度地图API加载失败:', error);
 }
+
+// 挂载应用
+app.mount('#app');
 }
+
 // 启动应用
 initApp();
-const app = createApp(App);
-app.use(ElementPlus, { locale: zhCn });
-app.use(router);
-app.mount('#app');

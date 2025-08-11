@@ -22,7 +22,7 @@ import Footer from '@/components/layout/Footer.vue';
 import AdminAside from '@/components/layout/AdminAside.vue';
 import UserAside from '@/components/layout/UserAside.vue';
 
-const isAdmin = computed(() => localStorage.getItem('isAdmin') === 'true');
+const isAdmin = computed(() => localStorage.getItem('roleId') === '1');
 const username = computed(() => localStorage.getItem('username') || 'Guest');
 </script>
 
@@ -66,6 +66,8 @@ html, body, #app {
 .aside {
   width: 200px;
   flex-shrink: 0;
+  height: 100%;
+  overflow-y: auto;
 }
 
 /* 主内容区域设置溢出滚动 */
