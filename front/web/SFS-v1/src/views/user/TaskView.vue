@@ -62,33 +62,23 @@
 import { ref, reactive, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { Search } from '@element-plus/icons-vue';
+import { ElMessageBox, ElMessage } from 'element-plus';
 import TaskList from '@/components/task/TaskList.vue';
 import TaskFormComponent from '@/components/task/TaskForm.vue';
-import type { TaskForm } from '@/components/task/TaskForm.vue';
+import apiClient from '@/utils/axiosConfig';
 
 const router = useRouter();
 
 // 响应式数据
-const tasks = ref<Task[]>([]);
+const tasks = ref<Activity[]>([]);
 
-interface Task {
-  id: number;
-  name: string;
-  location: string;
-  startTime?: string | Date;
-  duration: number;
-  createTime: string;
-  status: 'not-started' | 'in-progress' | 'ended';
-  rewardRules: Array<{
-    type: 'range';
-    range: { start: number; end: number };
-    reward: string;
-  }>;
-}
+// 从TaskForm组件导入接口定义，确保类型一致
+import type { Activity, Reward } from '@/components/task/TaskForm.vue';
+
 const dialogVisible = ref(false);
 const taskFormRef = ref<InstanceType<typeof TaskFormComponent>>();
 const dialogTitle = ref('新增任务');
-const currentTask = reactive<Partial<Task>>({});
+const currentTask = reactive<Partial<Activity>>({});
 const searchKeyword = ref('');
 const currentPage = ref(1);
 const pageSize = ref(10);
@@ -98,9 +88,9 @@ const filteredTasks = computed(() => {
   let result = tasks.value;
   if (searchKeyword.value) {
     const keyword = searchKeyword.value.toLowerCase();
-    result = result.filter(task => 
-      task.name.toLowerCase().includes(keyword) || 
-      task.location.toLowerCase().includes(keyword)
+    result = result.filter((task: Activity) => 
+      task.activityName.toLowerCase().includes(keyword) || 
+      task.activityType.toLowerCase().includes(keyword)
     );
   }
   return result;
@@ -113,267 +103,54 @@ const paginatedTasks = computed(() => {
   return filteredTasks.value.slice(start, end);
 });
 
+// 从后端获取活动数据
+const fetchActivities = async () => {
+  try {
+    const response = await apiClient.post('/activity/queryActivities', {
+      activityNameOrId: searchKeyword.value || null,
+      pageIndex: currentPage.value,
+      pageSize: pageSize.value
+    });
+    
+    if (response.data.code === 200) {
+      tasks.value = response.data.data.records.map((item: any) => ({
+        ...item,
+        activityName: item.activityName,
+        activityType: item.activityType,
+        durTime: item.durTime,
+        beginTime: item.beginTime,
+        status: 'not-started', // 简单设置状态，实际应根据时间计算
+        // 将rewardId转换为rewards数组格式
+        rewards: item.rewardId ? [{ id: item.rewardId.toString(), name: '奖励', image: '', rankStart: 1, rankEnd: 1 }] : []
+      }));
+    }
+  } catch (error) {
+    console.error('获取活动数据失败:', error);
+  }
+};
+
 // 模拟数据初始化
 onMounted(() => {
-  // 开发环境强制使用示例数据
-initDefaultTasks();
-// 生产环境可恢复localStorage逻辑
-// const savedTasks = localStorage.getItem('shakeForSpeedTasks');
-// if (savedTasks) {
-//   try {
-//     tasks.value = JSON.parse(savedTasks);
-//   } catch (e) {
-//     console.error('Failed to parse saved tasks', e);
-//     initDefaultTasks();
-//   }
-// } else {
-//   initDefaultTasks();
-// }
+  fetchActivities();
 });
-
-// 初始化默认任务数据
-const initDefaultTasks = () => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
-  tasks.value = [
-    {
-      id: 1,
-      name: '春节摇一摇活动',
-      location: '北京主会场',
-      rewardRules: [{
-        type: 'range',
-        range: { start: 88, end: 88 },
-        reward: 'iPhone 15 Pro'
-      }],
-      createTime: new Date().toISOString(),
-      startTime: new Date(today.getTime() + 2 * 60 * 60 * 1000).toISOString(), // 2小时后
-      duration: 7200, // 2小时
-      status: 'not-started'
-    },
-    {
-      id: 2,
-      name: '元宵晚会抽奖',
-      location: '上海分会场',
-      rewardRules: [{
-        type: 'range',
-        range: { start: 1, end: 10 },
-        reward: '红包100元'
-      }],
-      createTime: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-      startTime: new Date(today.getTime() + 3 * 60 * 60 * 1000).toISOString(), // 3小时后
-      duration: 7200, // 2小时
-      status: 'not-started'
-    },
-    {
-      id: 3,
-      name: '新年祝福活动',
-      location: '广州分会场',
-      rewardRules: [{
-        type: 'range',
-        range: { start: 168, end: 168 },
-        reward: '精美礼品'
-      }],
-      createTime: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
-      startTime: new Date(today.getTime() - 2 * 60 * 60 * 1000).toISOString(), // 2小时前
-      duration: 3600, // 1小时
-      status: 'ended'
-    },
-    {
-      id: 4,
-      name: '情人节特别活动',
-      location: '成都分会场',
-      rewardRules: [{
-        type: 'range',
-        range: { start: 520, end: 520 },
-        reward: '情侣套餐'
-      }],
-      createTime: new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString(),
-      startTime: new Date(today.getTime() + 4 * 60 * 60 * 1000).toISOString(),
-      duration: 3600,
-      status: 'not-started'
-    },
-    {
-      id: 5,
-      name: '女神节福利',
-      location: '杭州分会场',
-      rewardRules: [{
-        type: 'range',
-        range: { start: 38, end: 38 },
-        reward: '美容礼盒'
-      }],
-      createTime: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-      startTime: new Date(today.getTime() + 5 * 60 * 60 * 1000).toISOString(),
-      duration: 5400,
-      status: 'not-started'
-    },
-    {
-      id: 6,
-      name: '五一劳动竞赛',
-      location: '深圳分会场',
-      rewardRules: [{
-        type: 'range',
-        range: { start: 1, end: 5 },
-        reward: '劳模奖章'
-      }],
-      createTime: new Date(Date.now() - 60 * 60 * 60 * 1000).toISOString(),
-      startTime: new Date(today.getTime() + 6 * 60 * 60 * 1000).toISOString(),
-      duration: 7200,
-      status: 'not-started'
-    },
-    {
-      id: 7,
-      name: '六一儿童节活动',
-      location: '武汉分会场',
-      rewardRules: [{
-        type: 'range',
-        range: { start: 61, end: 61 },
-        reward: '儿童玩具套装'
-      }],
-      createTime: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(),
-      startTime: new Date(today.getTime() + 7 * 60 * 60 * 1000).toISOString(),
-      duration: 3600,
-      status: 'not-started'
-    },
-    {
-      id: 8,
-      name: '中秋团圆活动',
-      location: '南京分会场',
-      rewardRules: [{
-        type: 'range',
-        range: { start: 15, end: 15 },
-        reward: '月饼礼盒'
-      }],
-      createTime: new Date(Date.now() - 84 * 60 * 60 * 1000).toISOString(),
-      startTime: new Date(today.getTime() + 8 * 60 * 60 * 1000).toISOString(),
-      duration: 5400,
-      status: 'not-started'
-    },
-    {
-      id: 9,
-      name: '国庆欢乐颂',
-      location: '重庆分会场',
-      rewardRules: [{
-        type: 'range',
-        range: { start: 101, end: 101 },
-        reward: '旅游基金'
-      }],
-      createTime: new Date(Date.now() - 96 * 60 * 60 * 1000).toISOString(),
-      startTime: new Date(today.getTime() + 9 * 60 * 60 * 1000).toISOString(),
-      duration: 7200,
-      status: 'not-started'
-    },
-    {
-      id: 10,
-      name: '双十一秒杀',
-      location: '杭州主会场',
-      rewardRules: [{
-        type: 'range',
-        range: { start: 1111, end: 1111 },
-        reward: '1111元红包'
-      }],
-      createTime: new Date(Date.now() - 108 * 60 * 60 * 1000).toISOString(),
-      startTime: new Date(today.getTime() + 10 * 60 * 60 * 1000).toISOString(),
-      duration: 10800,
-      status: 'not-started'
-    },
-    {
-      id: 11,
-      name: '双十二特惠',
-      location: '上海主会场',
-      rewardRules: [{
-        type: 'range',
-        range: { start: 1212, end: 1212 },
-        reward: '购物券'
-      }],
-      createTime: new Date(Date.now() - 120 * 60 * 60 * 1000).toISOString(),
-      startTime: new Date(today.getTime() + 11 * 60 * 60 * 1000).toISOString(),
-      duration: 10800,
-      status: 'not-started'
-    },
-    {
-      id: 12,
-      name: '圣诞狂欢夜',
-      location: '北京分会场',
-      rewardRules: [{
-        type: 'range',
-        range: { start: 25, end: 25 },
-        reward: '圣诞礼物'
-      }],
-      createTime: new Date(Date.now() - 132 * 60 * 60 * 1000).toISOString(),
-      startTime: new Date(today.getTime() + 12 * 60 * 60 * 1000).toISOString(),
-      duration: 7200,
-      status: 'not-started'
-    },
-    {
-      id: 13,
-      name: '元旦倒计时',
-      location: '广州主会场',
-      rewardRules: [{
-        type: 'range',
-        range: { start: 0, end: 0 },
-        reward: '新年大礼包'
-      }],
-      createTime: new Date(Date.now() - 144 * 60 * 60 * 1000).toISOString(),
-      startTime: new Date(today.getTime() + 13 * 60 * 60 * 1000).toISOString(),
-      duration: 3600,
-      status: 'not-started'
-    },
-    {
-      id: 14,
-      name: '腊八节活动',
-      location: '西安分会场',
-      rewardRules: [{
-        type: 'range',
-        range: { start: 8, end: 8 },
-        reward: '腊八粥礼盒'
-      }],
-      createTime: new Date(Date.now() - 156 * 60 * 60 * 1000).toISOString(),
-      startTime: new Date(today.getTime() + 14 * 60 * 60 * 1000).toISOString(),
-      duration: 5400,
-      status: 'not-started'
-    },
-    {
-      id: 15,
-      name: '小年扫尘活动',
-      location: '沈阳分会场',
-      rewardRules: [{
-        type: 'range',
-        range: { start: 23, end: 23 },
-        reward: '清洁套装'
-      }],
-      createTime: new Date(Date.now() - 168 * 60 * 60 * 1000).toISOString(),
-      startTime: new Date(today.getTime() + 15 * 60 * 60 * 1000).toISOString(),
-      duration: 3600,
-      status: 'not-started'
-    }
-  ];
-  saveTasksToLocalStorage();
-};
-
-// 保存任务数据到localStorage
-const saveTasksToLocalStorage = () => {
-  localStorage.setItem('shakeForSpeedTasks', JSON.stringify(tasks.value));
-};
 
 // 事件处理方法
 const handleAddTask = () => {
   dialogTitle.value = '新增任务';
   Object.assign(currentTask, { 
-      name: '', 
-      location: '', 
-      startTime: new Date(),
-      duration: 300,
-      rewardRules: [{
-        type: 'range',
-        range: { start: 1, end: 1 },
-        reward: ''
-      }]
+      activityName: '', 
+      activityType: '', 
+      beginTime: new Date(),
+      durTime: 0,
+      rewards: [],
+      roomPwd: 0,
+      longitude: 0,
+      latitude: 0
     });
   dialogVisible.value = true;
 };
 
-const onEditTask = (task: Task) => {
+const onEditTask = (task: Activity) => {
   dialogTitle.value = '编辑任务';
   Object.assign(currentTask, { ...task });
   dialogVisible.value = true;
@@ -383,51 +160,100 @@ const handleSaveTask = () => {
   taskFormRef.value?.validateAndSubmit();
 };
 
-const onStartTask = (task: Task) => {
+const onStartTask = (task: Activity) => {
   // 使用Vue Router跳转到任务正式页
   router.push({
-    name: 'taskLive',
+    name: 'user-task-live',
     params: { id: task.id }
   });
 };
 
-const onDeleteTask = (task: Task) => {
-  tasks.value = tasks.value.filter(t => t.id !== task.id);
-  saveTasksToLocalStorage();
+const onDeleteTask = (task: Activity) => {
+  // 调用Element Plus的确认对话框
+  ElMessageBox.confirm(
+    '确定要删除这个任务吗？删除后将无法恢复。',
+    '删除确认',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  ).then(async () => {
+    try {
+      // 调用后端删除接口
+      const response = await apiClient.post('/activity/deleteActivity', null, {
+        params: {
+          id: task.id
+        }
+      });
+
+      if (response.data.code === 200) {
+        // 删除成功，从前端列表中移除任务
+        tasks.value = tasks.value.filter((t: Activity) => t.id !== task.id);
+        ElMessage.success('任务删除成功');
+      } else {
+        ElMessage.error('任务删除失败: ' + response.data.message);
+      }
+    } catch (error) {
+      console.error('删除任务失败:', error);
+      ElMessage.error('删除任务失败，请重试');
+    }
+  }).catch(() => {
+    // 用户取消删除
+    ElMessage.info('已取消删除');
+  });
 };
 
 // 监听表单提交事件
-const onFormSubmit = (formData: TaskForm) => {
+const onFormSubmit = (formData: Activity) => {
+  // 这里应该调用后端API保存任务
+  // 确保rewards是数组，如果不是则初始化为空数组
+  const rewards = Array.isArray(formData.rewards) ? formData.rewards : [];
+  
+  // 格式化每个reward项，确保包含所有必需字段
+  const formattedRewards = rewards.map((reward: Reward) => ({
+    id: reward.id || '',
+    name: reward.name || '奖励',
+    image: reward.image || '',
+    rankStart: reward.rankStart || 1,
+    rankEnd: reward.rankEnd || 1,
+    fileList: reward.fileList || []
+  }));
+
   if (currentTask.id) {
     // 更新现有任务
-    tasks.value = tasks.value.map(task => 
-      task.id === currentTask.id ? { ...task, ...formData } : task
+    tasks.value = tasks.value.map((task: Activity) => 
+      task.id === currentTask.id 
+        ? { ...task, ...formData, rewards: formattedRewards } 
+        : task
     );
-    saveTasksToLocalStorage();
   } else {
     // 创建新任务
     tasks.value.push({
       ...formData,
       id: Date.now(),
       createTime: new Date().toISOString(),
-      status: 'not-started'
+      status: 'not-started',
+      rewards: formattedRewards
     });
-    saveTasksToLocalStorage();
   }
   dialogVisible.value = false;
 };
 
 const handleSearch = () => {
   currentPage.value = 1; // 搜索时重置到第一页
+  fetchActivities();
 };
 
 const handleSizeChange = (val: number) => {
   pageSize.value = val;
   currentPage.value = 1;
+  fetchActivities();
 };
 
 const handleCurrentChange = (val: number) => {
   currentPage.value = val;
+  fetchActivities();
 };
 </script>
 

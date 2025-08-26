@@ -1,11 +1,10 @@
-package com.sfs.shakeforspeed.service;
+package com.sfs.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.sfs.shakeforspeed.model.dto.UserDTO;
-import com.sfs.shakeforspeed.model.entity.User;
-import com.sfs.shakeforspeed.model.vo.UserVO;
-import com.sfs.shakeforspeed.utils.result.Result;
-import org.springframework.stereotype.Service;
+import com.sfs.model.dto.UserDTO;
+import com.sfs.model.entity.User;
+import com.sfs.model.vo.UserVO;
+import com.sfs.utils.result.Result;
 
 public interface AuthService extends IService<User> {
     
@@ -17,4 +16,11 @@ public interface AuthService extends IService<User> {
     Result in(UserDTO userDTO);
 
     Result out(int userId);
+
+    /**
+     * 根据token获取用户
+     * @param token
+     * @return User
+     */
+    User getUserByToken(String token);
 }

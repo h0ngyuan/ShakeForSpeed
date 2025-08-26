@@ -12,7 +12,7 @@ app.post('/auth/login', (req, res) => {
   const { username, password } = req.body;
   
   // 简单的验证逻辑
-  if (username === 'admin' && password === 'admin') {
+  if (username === 'admin' && password === '123456') {
     return res.json({
       success: true,
       role: 'admin',
@@ -20,7 +20,7 @@ app.post('/auth/login', (req, res) => {
     });
   }
   
-  if (username === 'merchant' && password === 'merchant') {
+  if (username === 'merchant' && password === '123456') {
     return res.json({
       success: true,
       role: 'merchant',

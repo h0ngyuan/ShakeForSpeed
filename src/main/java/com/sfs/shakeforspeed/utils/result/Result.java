@@ -1,6 +1,6 @@
-package com.sfs.shakeforspeed.utils.result;
+package com.sfs.utils.result;
 
-import com.sfs.shakeforspeed.model.enums.AppHttpCodeEnum;
+import com.sfs.model.enums.AppHttpCodeEnum;
 import lombok.Data;
 import java.io.Serializable;
 

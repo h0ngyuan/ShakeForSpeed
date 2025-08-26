@@ -1,7 +1,7 @@
-package com.sfs.shakeforspeed.utils.context;
+package com.sfs.utils.context;
 
 
-import com.sfs.shakeforspeed.model.entity.User;
+import com.sfs.model.entity.User;
 
 public class UserContext {
 

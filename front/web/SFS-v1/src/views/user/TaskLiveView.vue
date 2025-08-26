@@ -1,13 +1,21 @@
 <template>
   <div class="task-live-container">
     <el-card class="task-live-card">
-      
-      
+      <div class="task-header">
+        <div class="header-info">
+          <h1>{{ task.name }}</h1>
+          <p class="task-location">{{ task.location }}</p>
+          <div v-if="task.imageUrl" class="task-image">
+            <img :src="processMinioUrl(task.imageUrl)" alt="任务图片" class="task-img">
+          </div>
+        </div>
+      </div>
+
       <div class="main-content-wrapper">
-      <div class="countdown-section">
-              <h2>任务开始倒计时</h2>
-              <div class="countdown-display" v-if="!isTaskStarted" style="font-size: 3rem; padding: 2rem 0;">
-          <el-button @click="startShaking" v-if="!isTaskStarted" class="start-button" style="margin-top: 2rem;">开始摇一摇</el-button>
+        <div class="countdown-section">
+          <h2>任务开始倒计时</h2>
+          <div v-if="!isTaskStarted">
+            <div class="countdown-display">
               <div class="time-block">
                 <span class="time-value">{{ countdown.days }}</span>
                 <span class="time-label">天</span>
@@ -28,34 +36,37 @@
                 <span class="time-label">秒</span>
               </div>
             </div>
-            <div v-else class="task-started">
-              <el-button type="primary" size="large" @click="startShaking" :disabled="isShaking">
-                {{ isShaking ? '摇一摇中...' : '开始摇一摇' }}
-              </el-button>
-            </div>
+            <el-button @click="startShaking" class="start-button">开始摇一摇</el-button>
           </div>
+          <div v-else class="task-started">
+            <el-button type="primary" size="large" @click="startShaking" :disabled="isShaking">
+              {{ isShaking ? '摇一摇中...' : '开始摇一摇' }}
+            </el-button>
+          </div>
+        </div>
 
-      <div class="realtime-ranking">
-          <el-table :data="rankingList" border style="width: 100%; flex: 1; border-top: none; border-right: none; border-bottom: none;">
-            <el-table-column type="index" label="rate" min-width="80"></el-table-column>
-            <el-table-column prop="username" label="name" min-width="180"></el-table-column>
-            <el-table-column prop="score" label="number" min-width="120"></el-table-column>
+        <div v-if="task.rewardRules && task.rewardRules.length > 0" class="reward-table">
+          <h3>奖励说明</h3>
+          <el-table :data="task.rewardRules" border style="width: 100%;">
+            <el-table-column prop="range.start" label="排名开始" min-width="80"></el-table-column>
+            <el-table-column prop="range.end" label="排名结束" min-width="80"></el-table-column>
+            <el-table-column prop="reward" label="奖励名称" min-width="180"></el-table-column>
           </el-table>
         </div>
-    </div>
+      </div>
 
       <div class="task-info">
         <div class="info-item">
-          <span class="info-label">创建时间：</span>
-          <span>{{ formatTime(task.createTime) }}</span>
-        </div>
-        <div v-if="task.startTime" class="info-item">
           <span class="info-label">开始时间：</span>
           <span>{{ formatTime(task.startTime) }}</span>
         </div>
         <div class="info-item">
           <span class="info-label">持续时间：</span>
           <span>{{ Math.floor(task.duration / 60) }}分{{ task.duration % 60 }}秒</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">当前人数：</span>
+          <span>{{ currentParticipants }}</span>
         </div>
       </div>
 
@@ -67,8 +78,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
+
+/**
+ * 处理Minio图片URL，确保特殊字符被正确转义
+ * @param url 原始URL
+ * @returns 转义后的URL
+ */
+const processMinioUrl = (url: string) => {
+  if (!url) return '';
+  // 确保URL中的斜杠和特殊字符被正确转义
+  return encodeURI(url);
+};
+
+
 import { useRoute, useRouter } from 'vue-router';
+import { ElMessage } from 'element-plus';
+import { getTaskDetail, getTaskRanking, joinTask, submitScore } from '../../api/task';
+import wsService from '../../api/wsService';
 
 interface RewardRule {
   type: 'range';
@@ -80,20 +107,29 @@ interface Task {
   id: number;
   name: string;
   location: string;
-  startTime?: string | Date;
-  duration: number;
-  createTime: string;
-  status: 'not-started' | 'in-progress' | 'ended';
+  imageUrl?: string;
   rewardRules: Array<{
-    type: 'range';
+    id?: number;
     range: { start: number; end: number };
     reward: string;
   }>;
+  createTime: string;
+  startTime?: string | Date;
+  duration: number;
+  status: 'not-started' | 'in-progress' | 'completed';
 }
 
 const route = useRoute();
 const router = useRouter();
+// 确保正确获取路由参数
 const taskId = Number(route.params.id);
+console.log('TaskLiveView - taskId:', taskId);
+
+// 验证任务ID是否有效
+if (isNaN(taskId) || taskId <= 0) {
+  ElMessage.error('无效的任务ID');
+  router.push('/user/tasks');
+}
 
 const task = ref<Task>({
   id: 0,
@@ -106,7 +142,8 @@ const task = ref<Task>({
 });
 
 // 实时排名数据
-const rankingList = ref([
+// 修改rankingList的类型定义，使其兼容API返回的数据
+const rankingList = ref<Array<{ id?: number; username: string; score: number; isYou: boolean }>>([
   { username: '加载中...', score: 0, isYou: false }
 ]);
 
@@ -121,28 +158,68 @@ const countdown = ref({
 const isTaskStarted = ref(false);
 const isShaking = ref(false);
 
-let timer: number | null = null;
+// 修复setInterval返回类型问题
+let timer: number | undefined = undefined;
+let simulationInterval: number | undefined = undefined;
 
-// 从localStorage加载任务数据
-const loadTask = () => {
-  const savedTasks = localStorage.getItem('shakeForSpeedTasks');
-  if (savedTasks) {
-    try {
-      const tasks = JSON.parse(savedTasks);
-      const foundTask = tasks.find((t: Task) => t.id === taskId);
-      if (foundTask) {
-        task.value = foundTask;
-        startCountdown();
-      } else {
-        // 任务不存在，返回列表页
-        router.push('/user/tasks');
-      }
-    } catch (e) {
-      console.error('Failed to load task', e);
+// 从API加载任务数据
+const loadTask = async () => {
+  try {
+    ElMessage.info('加载任务详情中...');
+    console.log('TaskLiveView - 调用getTaskDetail，taskId:', taskId);
+    const response = await getTaskDetail(taskId);
+    console.log('TaskLiveView - getTaskDetail响应:', response);
+    if (response && response.data) {
+      // 转换后端返回的数据结构以匹配前端Task接口
+      task.value = {
+        id: response.data.id,
+        name: response.data.activityName,
+        location: `${response.data.longitude || 0},${response.data.latitude || 0}`,
+        rewardRules: response.data.rewards?.map((reward: any) => ({
+          id: reward.id,
+          range: { start: reward.rankStart, end: reward.rankEnd },
+          reward: reward.name
+        })) || [],
+        createTime: response.data.createTime,
+        startTime: response.data.beginTime,
+        duration: response.data.durTime || 300,
+        status: 'not-started'
+      };
+      startCountdown();
+      // 初始化WebSocket连接
+      initWebSocket();
+      // 获取初始排名
+      loadRanking();
+    } else {
+      ElMessage.error('获取任务详情失败');
       router.push('/user/tasks');
     }
-  } else {
+  } catch (error) {
+    console.error('Failed to load task', error);
+    ElMessage.error('网络错误，无法加载任务详情');
     router.push('/user/tasks');
+  } finally {
+    // 移除ElMessage.closeAll()，因为closeAll方法不存在
+  }
+};
+
+// 加载排名数据
+const loadRanking = async () => {
+  try {
+    const response = await getTaskRanking(taskId);
+    if (response.data) {
+      // 为API返回的数据添加isYou字段
+    const rankingData = response.data.map((item: any) => ({
+      id: item.id || 0,
+      username: item.username,
+      score: item.score,
+      isYou: item.isYou || false
+    }));
+      rankingList.value = rankingData;
+    }
+  } catch (error) {
+    console.error('Failed to load ranking', error);
+    ElMessage.error('无法加载排名数据');
   }
 };
 
@@ -172,7 +249,7 @@ const startCountdown = () => {
       };
       if (timer) {
         clearInterval(timer);
-        timer = null;
+        timer = undefined;
       }
     } else {
       countdown.value = {
@@ -186,7 +263,7 @@ const startCountdown = () => {
   };
 
   updateCountdown();
-  timer = window.setInterval(updateCountdown, 1000);
+  timer = setInterval(updateCountdown, 1000);
 };
 
 // 格式化时间
@@ -195,381 +272,449 @@ const formatTime = (timeValue: string | Date | undefined) => {
   return new Date(timeValue).toLocaleString('zh-CN');
 };
 
+// 模拟排名更新
+const simulateRankingUpdates = () => {
+  // 生成模拟用户数据
+  const generateRandomUsers = () => {
+    const names = ['张三', '李四', '王五', '赵六', '钱七', '孙八', '周九', '吴十'];
+    return names.map((name, index) => ({
+      id: Math.floor(Math.random() * 1000),
+      username: name,
+      score: Math.floor(Math.random() * 100),
+      isYou: index === 0 // 第一个用户设为当前用户
+    })).sort((a, b) => b.score - a.score);
+  };
+
+  // 初始排名
+  rankingList.value = generateRandomUsers();
+
+  // 每2秒更新一次排名
+  simulationInterval = setInterval(() => {
+    if (!isShaking.value) {
+      clearInterval(simulationInterval);
+      simulationInterval = undefined;
+      return;
+    }
+
+    // 随机更新一些用户的分数
+    rankingList.value = rankingList.value.map(user => ({
+      ...user,
+      score: user.score + Math.floor(Math.random() * 10)
+    })).sort((a, b) => b.score - a.score);
+
+    // 模拟任务结束
+    if (Math.random() < 0.05) {
+      clearInterval(simulationInterval);
+      simulationInterval = undefined;
+      isShaking.value = false;
+      ElMessage.success('任务已结束，正在跳转到结果页面');
+      setTimeout(() => {
+        router.push({ name: 'user-task-result', params: { id: task.value.id } });
+      }, 1500);
+    }
+  }, 2000);
+};
+
 // 开始摇一摇
-const startShaking = () => {
-  // 初始化WebSocket连接
-  const ws = new WebSocket(`ws://${window.location.host}/shake-ws`);
-  ws.onopen = () => {
-    console.log('WebSocket连接已建立');
-    isTaskStarted.value = true;
-    startCountdown();
-  };
-  ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    if (data.type === 'ranking_update') {
-      rankingList.value = data.rankings;
-    }
-  };
-  ws.onclose = () => {
-    console.log('WebSocket连接已关闭');
-    if (isTaskStarted.value) {
-      // 尝试重连
-      setTimeout(() => startShaking(), 3000);
-    }
-  };
-  ws.onerror = (error) => {
-    console.error('WebSocket错误:', error);
-  };
+const startShaking = async () => {
+  if (isShaking.value) return;
+  isShaking.value = true;
+  isTaskStarted.value = true;
+  startCountdown();
+
+  try {
+    // 显示摇动提示
+    ElMessage.info('请开始摇晃手机');
+
+    // 调用API加入任务
+    await joinTask(taskId);
+
+    // 发送加入任务消息到WebSocket
+    wsService.send({
+      type: 'join_task',
+      taskId: task.value.id
+    });
+
+    // 设置设备摇动检测
+    setupDeviceShakeDetection();
+  } catch (error) {
+    console.error('Failed to start shaking', error);
+    ElMessage.error('无法开始摇一摇，请重试');
+    isShaking.value = false;
+  }
 }
+
+// 添加当前参与人数状态
+const currentParticipants = ref(0);
 
 // WebSocket连接初始化
 const initWebSocket = () => {
-  // 模拟WebSocket连接
-  let ws;
   try {
-    // 实际项目中替换为真实WebSocket地址
-    ws = new WebSocket('ws://localhost:8080/ws/ranking/' + task.value.id);
+    // 更新WebSocket连接URL，包含taskId
+    const wsUrl = `ws://${window.location.host}/shake-ws/${taskId}`;
+    console.log('TaskLiveView - WebSocket URL:', wsUrl);
+    wsService.setUrl(wsUrl);
 
-    ws.onopen = () => {
-      console.log('WebSocket连接已建立');
-      // 模拟数据更新
-      simulateRankingUpdates();
-    };
+    // 连接WebSocket
+    wsService.connect();
 
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'ranking_update') {
-          rankingList.value = data.ranking;
-        } else if (data.type === 'task_ended') {
-          // 任务结束，跳转到结算页面
-          router.push({ name: 'taskResult', params: { taskId: task.value.id } });
-        }
-      } catch (e) {
-        console.error('解析WebSocket消息失败', e);
+    // 添加WebSocket连接状态监听
+    wsService.on('open', () => {
+      console.log('TaskLiveView - WebSocket连接已建立');
+      // 连接成功后发送获取人数请求
+      wsService.send({
+        type: 'get_participants',
+        taskId: task.value.id
+      });
+    });
+
+    wsService.on('error', (error) => {
+      console.error('TaskLiveView - WebSocket错误:', error);
+      ElMessage.error('WebSocket连接错误');
+    });
+
+    wsService.on('close', () => {
+      console.log('TaskLiveView - WebSocket连接已关闭');
+    });
+
+    // 订阅人数更新
+    wsService.subscribe('participant_update', (data: any) => {
+      if (data.count !== undefined) {
+        currentParticipants.value = data.count;
       }
-    };
+    });
 
-    ws.onclose = () => {
-      console.log('WebSocket连接已关闭');
-      // 尝试重连
-      setTimeout(initWebSocket, 3000);
-    };
+    // 订阅排名更新
+    wsService.subscribe('ranking_update', (data: any) => {
+      if (data.rankings) {
+        rankingList.value = data.rankings;
+      }
+    });
 
-    ws.onerror = (error) => {
-      console.error('WebSocket错误:', error);
-    };
-  } catch (e) {
-    console.error('WebSocket初始化失败', e);
-    // 降级为模拟数据
-    simulateRankingUpdates();
+    // 订阅任务结束通知
+    wsService.subscribe('task_ended', () => {
+      isShaking.value = false;
+      ElMessage.success('任务已结束，正在跳转到结果页面');
+      setTimeout(() => {
+        console.log('TaskLiveView - 任务结束，跳转到结果页面:', task.value.id);
+        router.push({ name: 'user-task-result', params: { id: task.value.id } });
+      }, 1500);
+    });
+  } catch (error) {
+    console.error('TaskLiveView - 初始化WebSocket失败:', error);
+    ElMessage.error('初始化WebSocket连接失败');
   }
 };
 
-// 模拟排名数据更新
-const simulateRankingUpdates = () => {
-  // 模拟用户列表
-  const users = ['张三', '李四', '王五', '赵六', '钱七', '孙八', '周九', '吴十'];
-  let count = 0;
+// 发送摇动数据
+const sendShakeData = (intensity: number) => {
+  wsService.send({
+    type: 'shake',
+    taskId: task.value.id,
+    intensity
+  });
+};
 
-  const updateInterval = setInterval(() => {
-    count++;
-    // 生成随机排名数据
-    const newRanking = users
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 8)
-      .map((username, index) => ({
-        username,
-        score: Math.floor(Math.random() * 100) + 50 * count,
-        isYou: username === '你'
-      }))
-      .sort((a, b) => b.score - a.score);
+// 模拟设备摇动（实际项目中应替换为真实的设备传感器API）
+const simulateDeviceShaking = () => {
+  let shakeCount = 0;
+  const maxShakes = 100; // 模拟的最大摇动次数
+  const interval = 100; // 摇动间隔（毫秒）
 
-    // 确保当前用户在列表中
-    if (!newRanking.some(item => item.isYou)) {
-      newRanking[Math.floor(Math.random() * newRanking.length)] = {
-        username: '你',
-        score: Math.floor(Math.random() * 100) + 50 * count,
-        isYou: true
-      };
-      newRanking.sort((a, b) => b.score - a.score);
+  const shakeInterval = setInterval(() => {
+    if (!isShaking.value || shakeCount >= maxShakes) {
+      clearInterval(shakeInterval);
+      return;
     }
 
-    rankingList.value = newRanking;
+    // 模拟随机摇动强度
+    const intensity = Math.floor(Math.random() * 5) + 1;
+    sendShakeData(intensity);
+    shakeCount++;
 
-    // 模拟任务结束（15秒后）
-    if (count >= 15) {
-      clearInterval(updateInterval);
-      // 跳转到结算页面
-      router.push({ name: 'taskResult', params: { taskId: task.value.id } });
+    // 每10次摇动更新一次排名
+    if (shakeCount % 10 === 0) {
+      loadRanking();
     }
-  }, 1000);
-}
+  }, interval);
+};
+
+// 实际的设备摇动检测（在移动设备上实现）
+const setupDeviceShakeDetection = () => {
+  // 这里应该使用设备的加速度传感器API
+  // 为简化示例，我们使用模拟方法
+  simulateDeviceShaking();
+};
 
 // 返回任务列表
 const goBack = () => {
+  console.log('TaskLiveView - 调用goBack，跳转到/user/tasks');
   router.push('/user/tasks');
 };
 
 // 前往结算页面
 const goToResult = () => {
-  router.push({ name: 'taskResult', params: { taskId: task.value.id } });
+  router.push({ name: 'user-task-result', params: { id: task.value.id } });
 };
 
 onMounted(() => {
+  console.log('TaskLiveView - 组件已挂载');
   loadTask();
 });
 
 onUnmounted(() => {
+  // 清理倒计时定时器
   if (timer) {
     clearInterval(timer);
+    timer = undefined;
+  }
+  // 断开WebSocket连接
+  wsService.disconnect();
+  // 取消所有订阅
+  wsService.unsubscribeAll();
+  // 停止摇动状态
+  isShaking.value = false;
+  // 停止模拟更新
+  if (simulationInterval) {
+    clearInterval(simulationInterval);
+    simulationInterval = undefined;
   }
 });
 </script>
 
 <style scoped>
 .task-live-container {
-  padding: 0;
-  margin: 0;
-  width: 100%;
-  height: 100vh;
-  background-color: #fff;
-  overflow: hidden;
+  padding: 20px;
+  background-color: #ffffff; /* 恢复默认白色背景 */
+  height: 850px; /* 设置固定高度 */
+  width: 1700px; /* 设置固定宽度 */
+  margin: 0 auto; /* 居中显示 */
+  overflow: hidden; /* 防止滚动 */
 }
 
 .task-live-card {
-  padding: 20px 40px;
-  height: calc(100vh - 40px);
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+  overflow: hidden;
+}
+
+.task-header {
+  background-color: #4096ff;
+  color: white;
+  padding: 20px 30px;
+  border-bottom: 4px solid #3a86ff;
+}
+
+.header-info {
   display: flex;
   flex-direction: column;
 }
 
-.task-header {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-bottom: 10px;
-  padding: 8px 0;
-  background-color: transparent;
-  box-shadow: none;
-}
-
-.header-info {
-  text-align: left;
-}
-
-.action-buttons {
-  margin-left: auto;
-}
-
 .task-header h1 {
-  color: #303133;
-  margin: 0 0 10px 0;
-  font-size: 32px;
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+.task-image {
+  margin-top: 15px;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.task-img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.task-img:hover {
+  transform: scale(1.02);
 }
 
 .task-location {
-  color: #606266;
-  font-size: 18px;
-  margin: 0;
+  margin-top: 5px;
+  font-size: 1rem;
+  opacity: 0.9;
 }
 
 .main-content-wrapper {
   display: flex;
-  gap: 0;
-  margin-bottom: 0;
-  flex: 1;
-  align-items: stretch;
-  width: 100%;
-  max-width: 100%;
-  margin: 0;
-  height: calc(100vh - 60px);
+  flex-wrap: wrap;
+  justify-content: space-between;
+  margin: 30px;
+  gap: 20px;
+  height: calc(100% - 240px); /* 调整内容区域高度 */
 }
 
 .countdown-section {
-  text-align: center;
-  flex: 2;
-  min-width: 0;
+  flex: 0 0 calc(60% - 10px); /* 扩大倒计时区域 */
+  padding: 35px; /* 增加内边距 */
+  background-color: #f0f7ff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding: 0;
-  background: transparent;
-  border-radius: 0;
-  box-shadow: none;
-}
-
-.realtime-ranking {
-  flex: 1;
-  min-width: 0;
-  padding: 0;
-  background-color: transparent;
-  border-radius: 0;
-  box-shadow: none;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border-left: 2px solid #000;
-}
-.realtime-ranking .el-table {
-  flex: 1;
-  overflow-y: auto;
-  margin-bottom: 0;
-}
-
-.time-display {
-  color: #000;
-  font-size: 120px;
-  font-weight: bold;
-  display: flex;
   justify-content: center;
   align-items: center;
-  flex: 1;
 }
 
 .countdown-display {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 30px;
+  margin: 40px 0; /* 增加间距 */
 }
 
 .time-block {
-  background: transparent;
-  color: #000;
-  padding: 20px 10px;
-  border: none;
-  min-width: 80px;
-  text-align: center;
-  box-shadow: none;
-}
-.time-block:hover {
-  transform: translateY(-5px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 20px; /* 增加间距 */
+  background-color: white;
+  padding: 25px 30px; /* 增加内边距 */
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-width: 120px; /* 增加宽度 */
 }
 
 .time-value {
-  display: block;
-  font-size: 72px;
+  font-size: 3.5rem; /* 增大字体 */
   font-weight: bold;
-  line-height: 1.2;
-  letter-spacing: -2px;
+  color: #333;
+  font-family: 'Arial', sans-serif;
 }
 
 .time-label {
-  display: block;
-  font-size: 14px;
-  margin-top: 5px;
-  opacity: 0.9;
+  font-size: 1.1rem; /* 增大字体 */
+  color: #666;
+  margin-top: 8px;
 }
 
 .time-separator {
-  font-size: 56px;
+  font-size: 3.5rem; /* 增大字体 */
+  color: #4096ff;
   font-weight: bold;
-  color: #303133;
-  padding: 0 15px;
+  margin: 0 10px;
 }
 
-.task-started {
-  margin-top: 30px;
+.start-button {
+  display: block;
+  margin: 0 auto;
+  background-color: #4096ff;
+  color: white;
+  border: none;
+  padding: 15px 40px; /* 增加内边距 */
+  border-radius: 30px;
+  cursor: pointer;
+  font-size: 1.2rem; /* 增大字体 */
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(64, 150, 255, 0.3);
 }
 
-.reward-rules {
-  margin-bottom: 40px;
+.reward-table {
+  flex: 0 0 calc(40% - 10px); /* 设置奖励表宽度 */
+  padding: 25px;
+  background-color: #f0f7ff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease;
 }
 
-.realtime-ranking h3 {
-  color: #303133;
-  margin-bottom: 15px;
-  font-size: 20px;
-  font-weight: 600;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #eee;
-}
-
-.reward-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.reward-item {
-  padding: 15px;
-  background: #f5f7fa;
-  border-radius: 8px;
-  border-left: 4px solid #409eff;
-}
-
-.reward-info {
-  font-size: 16px;
-  color: #303133;
+.reward-table h3 {
+  margin-top: 0;
+  color: #333;
+  font-size: 1.3rem;
+  margin-bottom: 20px;
 }
 
 .task-info {
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 15px 30px;
-  margin-bottom: 20px;
-  padding: 20px 25px;
-  background-color: #fff;
+  width: 100%;
+  padding: 25px;
+  background-color: white;
   border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-  max-width: 95%;
-  margin-left: auto;
-  margin-right: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-around;
 }
 
 .info-item {
-  flex: 1;
-  min-width: 220px;
-  margin-bottom: 0;
-  color: #606266;
-  font-size: 16px;
-}
-.info-item span {
-  display: inline-block;
-  padding: 5px 0;
+  font-size: 1.1rem;
 }
 
-.info-label {
+.realtime-ranking {
+  display: none;
+}
+
+.task-info {
+  width: 100%;
+  padding: 25px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-top: 20px;
+}
+
+.task-prize {
+  font-size: 1.3rem;
+  color: #e6a23c;
   font-weight: bold;
-  color: #303133;
-}
-
-.back-button {
+  margin-top: 15px;
   text-align: center;
+  padding: 15px;
+  background-color: #fff9e6;
+  border-radius: 8px;
+  border-left: 4px solid #e6a23c;
 }
 
-@media (max-width: 992px) {
-  .main-content-wrapper {
-    flex-direction: column;
-  }
+.task-started {
+  display: flex;
+  justify-content: center;
+  margin-top: 30px;
+}
 
+/* 排名动画 */
+.el-table__row {
+  transition: all 0.5s ease;
+}
+
+.el-table__row:hover {
+  background-color: #f0f7ff !important;
+}
+
+/* 手机响应式 */
+@media (max-width: 992px) {
   .countdown-section,
   .realtime-ranking {
-    width: 100%;
-    min-width: auto;
+    flex: 0 0 100%;
   }
-  .task-live-card {
-    padding: 20px;
-  }
-  
-  .countdown-display {
-    gap: 5px;
-  }
-  
+}
+
+@media (max-width: 576px) {
   .time-block {
-    padding: 15px;
+    margin: 0 8px;
+    padding: 10px 15px;
     min-width: 60px;
   }
-  
+
   .time-value {
-    font-size: 24px;
+    font-size: 1.8rem;
   }
-  
+
   .time-separator {
-    font-size: 24px;
+    font-size: 1.8rem;
+  }
+
+  .main-content-wrapper {
+    margin: 15px;
   }
 }
 </style>

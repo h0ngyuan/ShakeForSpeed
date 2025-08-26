@@ -55,28 +55,49 @@ const router = useRouter();
 
 const handleLogin = async () => {
   try {
+    console.log('尝试登录，账号:', form.username);
     const response = await apiClient.post('/auth/login', {
       username: form.username,
       password: form.password
     });
 
+    console.log('登录响应:', response.data);
+
     if (response.data.code === 200) {
+      localStorage.setItem('userId', response.data.data.userId);
+      console.log('用户ID：',response.data.data.userId);
       // 登录成功，保存用户信息到localStorage
       localStorage.setItem('username', form.username);
-      localStorage.setItem('roleId', response.data.data.roleId.toString());
+      // 根据新角色模式设置role (admin/merchant)
+      const role = response.data.data.role;
+      console.log('LoginView - 设置role为:', role);
       localStorage.setItem('token', response.data.data.token);
+
+      // 强制同步localStorage更改
+      window.dispatchEvent(new Event('storage'));
       
-      // 根据roleId跳转到不同主页
-      if (response.data.data.roleId === 1) {
-        // 管理员角色
-        router.push({ name: 'admin-home' });
-      } else if (response.data.data.roleId === 2) {
-        // 商家角色
-        router.push({ name: 'merchant-home' });
-      } else {
-        // 普通用户角色
-        router.push({ name: 'user-home' });
-      }
+      // 增强调试信息
+      console.log('登录成功，用户角色:', response.data.data.role);
+      console.log('localStorage中的role:', localStorage.getItem('role'));
+      console.log('尝试跳转到的路由:', 
+        role === 'admin' ? 'admin-home' : 'user-home');
+      
+      // 延迟跳转，确保localStorage已更新
+      setTimeout(() => {
+        // 根据role跳转到不同主页
+          if (role === 'admin') {
+            // 管理员角色
+            console.log('执行管理员跳转');
+            router.push({ name: 'admin-home' });
+          } else if (role === 'merchant') {
+            // 商家角色 - 跳转到用户首页
+            console.log('执行商家跳转');
+            router.push({ name: 'user-home' });
+          } else {
+            console.log('执行其他用户跳转');
+            router.push({ name: 'user-home' });
+          }
+      }, 100);
     } else {
       // 登录失败，显示错误信息
       alert(response.data.msg || '登录失败，请检查账号密码');
@@ -103,21 +124,18 @@ const handleLogin = async () => {
   background-color: #f5f5f5;
 }
 
-
 /* 登录卡片样式 */
 .login-box {
   width: 400px;
-  /* 添加内边距 */
-  padding: 24px;
-  /* 添加阴影效果 */
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  border-radius: 10px;
 }
 
 /* 登录标题样式 */
 .login-title {
   text-align: center;
   margin-bottom: 20px;
-  color: #303133;
+  color: #333;
 }
 
 /* 登录按钮样式 */

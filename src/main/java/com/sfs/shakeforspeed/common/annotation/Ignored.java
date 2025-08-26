@@ -1,4 +1,4 @@
-package com.sfs.shakeforspeed.common.annotation;
+package com.sfs.common.annotation;
 
 
 import java.lang.annotation.*;

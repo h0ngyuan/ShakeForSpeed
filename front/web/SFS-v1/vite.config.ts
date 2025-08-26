@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
+  appType: 'spa',
   plugins: [vue()],
   resolve: {
     alias: {
@@ -15,7 +16,6 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       }
-    },
-    historyApiFallback: true
+    }
   }
 });

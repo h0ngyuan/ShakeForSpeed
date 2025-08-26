@@ -1,9 +1,9 @@
-package com.sfs.shakeforspeed.controller;
+package com.sfs.controller;
 
-import com.sfs.shakeforspeed.common.annotation.Ignored;
-import com.sfs.shakeforspeed.model.dto.UserDTO;
-import com.sfs.shakeforspeed.service.AuthService;
-import com.sfs.shakeforspeed.utils.result.Result;
+import com.sfs.common.annotation.Ignored;
+import com.sfs.model.dto.UserDTO;
+import com.sfs.service.AuthService;
+import com.sfs.utils.result.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

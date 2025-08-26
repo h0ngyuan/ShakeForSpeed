@@ -6,7 +6,8 @@
     "echarts",
     "vue",
     "vite",
-    "elementplus"
+    "elementplus",
+    "axios"
   ],
   "ignorePaths": [
     "node_modules/**"

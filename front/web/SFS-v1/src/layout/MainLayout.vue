@@ -22,8 +22,17 @@ import Footer from '@/components/layout/Footer.vue';
 import AdminAside from '@/components/layout/AdminAside.vue';
 import UserAside from '@/components/layout/UserAside.vue';
 
-const isAdmin = computed(() => localStorage.getItem('roleId') === '1');
-const username = computed(() => localStorage.getItem('username') || 'Guest');
+// 从localStorage获取角色信息，使用新的字符串角色模式(admin/merchant)
+const role = computed(() => localStorage.getItem('role'));
+const isAdmin = computed(() => {
+  const value = role.value;
+  console.log(value);
+  if(value === 'admin'){
+    return true;
+  }else
+  return false;
+});
+const username = computed(() => localStorage.getItem('username'));
 </script>
 
 <style scoped>

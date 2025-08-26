@@ -6,18 +6,13 @@
     style="width: 100%"
     :header-cell-style="{ 'background-color': '#f5f7fa', 'font-weight': 'bold' }"
   >
-    <el-table-column prop="name" label="任务名称" min-width="120" align="center"></el-table-column>
-    <el-table-column prop="location" label="任务地点" width="120" align="center"></el-table-column>
+    <el-table-column prop="activityName" label="任务名称" min-width="120" align="center"></el-table-column>
+    <el-table-column prop="activityType" label="任务地点" width="120" align="center"></el-table-column>
     <el-table-column label="奖励设置" width="180" align="center">
       <template #default="{ row }">
-        <div v-if="row.rewardRules && row.rewardRules.length > 0">
-          <div v-for="(rule, index) in [row.rewardRules[0]]" :key="index">
-            <span v-if="rule.range.start === rule.range.end">
-              第{{ rule.range.start }}名：{{ rule.reward }}
-            </span>
-            <span v-else>
-              第{{ rule.range.start }}-{{ rule.range.end }}名：{{ rule.reward }}
-            </span>
+        <div v-if="row.rewards && row.rewards.length > 0">
+          <div v-for="reward in row.rewards" :key="reward.id" class="reward-item">
+            <span>{{ reward.name }} (排名: {{ reward.rankStart }}-{{ reward.rankEnd }})</span>
           </div>
         </div>
         <span v-else>无奖励设置</span>
@@ -31,12 +26,12 @@
     <el-table-column prop="id" label="房间号" width="80" align="center"></el-table-column>
     <el-table-column label="开始时间" width="140" align="center">
       <template #default="{ row }">
-        <span>{{ row.startTime ? formatTime(row.startTime) : '未设置' }}</span>
+        <span>{{ row.beginTime ? formatTime(row.beginTime) : '未设置' }}</span>
       </template>
     </el-table-column>
     <el-table-column label="持续时间" width="100" align="center">
       <template #default="{ row }">
-        <span>{{ Math.floor(row.duration / 60) }}分{{ row.duration % 60 }}秒</span>
+        <span>{{ Math.floor(row.durTime / 60) }}分{{ row.durTime % 60 }}秒</span>
       </template>
     </el-table-column>
     <el-table-column prop="status" label="状态" width="100" align="center">
@@ -66,43 +61,30 @@
 
 <script setup lang="ts">
 import { defineProps, defineEmits } from 'vue';
+// 导入统一的接口定义
+import type { Activity, Reward } from '@/components/task/TaskForm.vue';
 
-interface RewardRule {
-  type: 'range';
-  range: { start: number; end: number };
-  reward: string;
-}
-
-interface Task {
-  id: number;
-  name: string;
-  location: string;
-  rewardRules: RewardRule[];
-  createTime: string;
-  startTime?: string | Date;
-  duration: number;
-  status: 'not-started' | 'in-progress' | 'ended';
-}
+type RewardRule = any;
 
 defineProps<{
-  tasks: Task[];
+  tasks: Activity[];
 }>();
 
 const emit = defineEmits<{
-  (e: 'start-task', task: Task): void;
-  (e: 'edit-task', task: Task): void;
-  (e: 'delete-task', task: Task): void;
+  (e: 'start-task', task: Activity): void;
+  (e: 'edit-task', task: Activity): void;
+  (e: 'delete-task', task: Activity): void;
 }>();
 
-const onStartTask = (task: Task) => {
+const onStartTask = (task: Activity) => {
   emit('start-task', task);
 };
 
-const onEditTask = (task: Task) => {
+const onEditTask = (task: Activity) => {
   emit('edit-task', task);
 };
 
-const onDeleteTask = (task: Task) => {
+const onDeleteTask = (task: Activity) => {
   emit('delete-task', task);
 };
 
@@ -117,3 +99,12 @@ const formatTime = (timeValue: string | Date | undefined) => {
   });
 };
 </script>
+
+<style scoped>
+.reward-item {
+  margin-bottom: 4px;
+  padding: 2px 4px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+}
+</style>
