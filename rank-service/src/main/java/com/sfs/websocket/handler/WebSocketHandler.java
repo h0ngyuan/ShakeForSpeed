@@ -3,7 +3,7 @@ package com.sfs.websocket.handler;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.sfs.model.enums.NettyConstants;
-import com.sfs.websocket.service.WebSocketBroadcastService;
+import com.sfs.websocket.service.BroadcastService;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 public class WebSocketHandler extends SimpleChannelInboundHandler<TextWebSocketFrame> {
 
     @Autowired
-    private WebSocketBroadcastService broadcastService;
+    private BroadcastService broadcastService;
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, TextWebSocketFrame msg) throws Exception {

@@ -1,5 +1,8 @@
 package com.sfs.service;
 
+import com.sfs.utils.result.Result;
+
 public interface RoomService {
-    void joinRoom(String roomId, String userId);
+
+    Result startActivity(Long activityId) throws Exception;
 }

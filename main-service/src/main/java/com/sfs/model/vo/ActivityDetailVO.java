@@ -1,6 +1,7 @@
 ﻿package com.sfs.model.vo;
 
 import com.sfs.model.entity.Activity;
+import com.sfs.model.enums.ActivityState;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -9,6 +10,7 @@ import java.util.List;
 @Data
 public class ActivityDetailVO {
     private Long id;
+    private ActivityState state;
     private String activityName;
     private String activityType;
     private String creatorRole;
@@ -24,6 +26,7 @@ public class ActivityDetailVO {
     public static ActivityDetailVO fromActivity(Activity activity, List<RewardVO> rewards) {
         ActivityDetailVO vo = new ActivityDetailVO();
         vo.setId(activity.getId());
+        vo.setState(activity.getState());
         vo.setActivityName(activity.getActivityName());
         vo.setActivityType(activity.getActivityType().name());
         vo.setCreatorRole(activity.getCreatorRole());

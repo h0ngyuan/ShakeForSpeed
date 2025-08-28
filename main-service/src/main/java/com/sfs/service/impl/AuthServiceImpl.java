@@ -6,7 +6,12 @@ import cn.hutool.jwt.JWTPayload;
 import cn.hutool.jwt.JWTUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.sfs.mapper.AuthMapper;
 import com.sfs.model.dto.UserDTO;
+import com.sfs.model.entity.User;
+import com.sfs.model.enums.AppHttpCodeEnum;
+import com.sfs.model.vo.UserVO;
+import com.sfs.service.AuthService;
 import com.sfs.utils.context.UserContext;
 import com.sfs.utils.result.Result;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service
-public class AuthServiceImpl extends ServiceImpl<AuthMapper,User> implements AuthService  {
+public class AuthServiceImpl extends ServiceImpl<AuthMapper,User> implements AuthService {
 
     @Autowired
     private AuthMapper authMapper;

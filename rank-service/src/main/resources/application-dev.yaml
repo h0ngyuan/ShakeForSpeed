@@ -2,6 +2,8 @@ server:
   port: 8080
 
 spring:
+  main:
+    web-application-type: reactive
   datasource:
     url: jdbc:mysql://localhost:3306/sfs_db?useSSL=false&serverTimezone=UTC
     username: root
@@ -11,6 +13,11 @@ spring:
     host: localhost
     port: 6379
     database: 1
+  kafka:
+    streams:
+      application-id: shake-count
+      properties:
+        state.dir: /tem/kafka-streams
 
 mybatis-plus:
   configuration:
@@ -24,6 +31,9 @@ minio:
     reward-img: sfs-reward-img
 
 jwt:
+  secret: 111
+  expire: 1000000000
 
-
-
+app:
+  broadcast-mode: webflux
+  stream-engine: flink

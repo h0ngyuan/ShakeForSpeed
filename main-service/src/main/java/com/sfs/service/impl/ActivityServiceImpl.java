@@ -33,6 +33,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -169,7 +170,7 @@ public class ActivityServiceImpl extends ServiceImpl<ActivityMapper, Activity> i
     public Result joinActivity(ActivityInfoDTO activityInfoDTO) throws Exception {
         //先查看有没有房间号是这样的房间
         LambdaQueryWrapper<Activity> activityQueryWrapper = new LambdaQueryWrapper<Activity>().eq(Activity::getRoomPwd, activityInfoDTO.getRoomPwd())
-                .in(Activity::getState, Arrays.asList(ActivityState.CREATED,ActivityState.PENDING));
+                .in(Activity::getState, Arrays.asList(ActivityState.CREATED));
         Activity activity = activityMapper.selectOne(activityQueryWrapper);
         if (activity==null&&activity.getRoomPwd()==null){
             throw new Exception("没有这样的房间");
@@ -190,11 +191,11 @@ public class ActivityServiceImpl extends ServiceImpl<ActivityMapper, Activity> i
                 lock.unlock();
             }
         }
-        Map<String,Object> args = null;
-        args.put("TYPE","PeopleChange");
+        Map<String,Object> args = new HashMap<>();
+        args.put("TYPE","PEOPLECHANGE");
         args.put("METHOD","SUB");
         args.put("activityId",activityId);
-        kafkaTemplate.send(TopicConstants.USER_CHANGE_INFO_TOPIC, GroupConstants.RANK_GROUP,args);
+        kafkaTemplate.send(TopicConstants.USER_CHANGE_INFO_TOPIC, activityId,args);
         return Result.successResult(activityId);
 
     }
@@ -204,10 +205,10 @@ public class ActivityServiceImpl extends ServiceImpl<ActivityMapper, Activity> i
         //这边就退出房间
         String activity_activityId = RedissonPrefixEnum.ACTIVITY + activityInfoDTO.getActivityId();
         redissonClient.getScoredSortedSet(activity_activityId).remove(activityInfoDTO.getUserId());
-        Map<String,Object> args = null;
-        args.put("TYPE","PeopleChange");
+        Map<String,Object> args = new HashMap<>();
+        args.put("TYPE","PEOPLECHANGE");
         args.put("METHOD","SUB");
         args.put("activityId",activityInfoDTO.getActivityId());
-        kafkaTemplate.send(TopicConstants.USER_CHANGE_INFO_TOPIC, GroupConstants.RANK_GROUP,args);
+        kafkaTemplate.send(TopicConstants.ACTIVITY_START_TOPIC, String.valueOf(activityInfoDTO.getActivityId()),args);
     }
 }

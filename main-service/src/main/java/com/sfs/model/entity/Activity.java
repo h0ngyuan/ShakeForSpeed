@@ -1,6 +1,7 @@
 ﻿package com.sfs.model.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.sfs.model.enums.ActivityState;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
@@ -25,7 +26,7 @@ public class Activity {
     private Integer roomPwd;
     private Double longitude;
     private Double latitude;
-    private int state;
+    private ActivityState state;
 
 
     @Getter

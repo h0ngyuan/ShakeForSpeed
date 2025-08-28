@@ -1,6 +1,9 @@
 ﻿package com.sfs.common.handler;
 
 import com.sfs.common.annotation.Ignored;
+import com.sfs.model.entity.User;
+import com.sfs.model.enums.AppHttpCodeEnum;
+import com.sfs.service.AuthService;
 import com.sfs.utils.context.UserContext;
 import com.sfs.utils.result.Result;
 import org.springframework.beans.factory.annotation.Autowired;
