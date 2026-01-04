@@ -38,8 +38,7 @@ public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
         if (ex instanceof NotFoundException) {
             httpStatus = HttpStatus.NOT_FOUND;
             errorMessage = "Service not found";
-        } else if (ex instanceof ResponseStatusException) {
-            ResponseStatusException responseStatusException = (ResponseStatusException) ex;
+        } else if (ex instanceof ResponseStatusException responseStatusException) {
             httpStatus = responseStatusException.getStatus();
             errorMessage = responseStatusException.getReason();
         } else if (ex instanceof java.net.ConnectException) {
@@ -74,13 +73,14 @@ public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
      */
     private String buildErrorResponse(int code, String message, String path) {
         return String.format(
-            "{\n" +
-            "  \"code\": %d,\n" +
-            "  \"message\": \"%s\",\n" +
-            "  \"data\": null,\n" +
-            "  \"path\": \"%s\",\n" +
-            "  \"timestamp\": \"%s\"\n" +
-            "}",
+                """
+                        {
+                          "code": %d,
+                          "message": "%s",
+                          "data": null,
+                          "path": "%s",
+                          "timestamp": "%s"
+                        }""",
             code,
             message,
             path,

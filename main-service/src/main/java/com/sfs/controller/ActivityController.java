@@ -1,9 +1,6 @@
 package com.sfs.controller;
 
-import com.sfs.model.dto.ActivityInfoDTO;
-import com.sfs.model.dto.CreateActivityDTO;
-import com.sfs.model.dto.QueryActivityDTO;
-import com.sfs.model.dto.RewardDTO;
+import com.sfs.model.dto.*;
 import com.sfs.service.ActivityService;
 import com.sfs.service.RewardService;
 import com.sfs.utils.result.Result;
@@ -30,8 +27,8 @@ public class ActivityController {
     private RewardService rewardService;
 
     @PostMapping("/queryActivities")
-    public Result queryActivities(@RequestBody QueryActivityDTO queryActivityDTO){
-        return activityService.queryActivities(queryActivityDTO);
+    public Result queryActivities(@RequestBody ActivityQuery activityQuery){
+        return activityService.queryActivities(activityQuery);
     }
 
     @PostMapping(path = "/createActivity", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -42,13 +39,12 @@ public class ActivityController {
 
     @PostMapping("/deleteActivity")
     public Result deleteActivity(@RequestParam("id") Long id){
-
         return activityService.deleteById(id);
     }
 
     @GetMapping("/{id}")
-    public Result getActivityById(@PathVariable Long id) {
-        return activityService.getActivityById(id);
+    public Result getActivityDetailById(@PathVariable Long id) {
+        return activityService.getActivityDetailById(id);
     }
 
     @GetMapping("/joinActivity")

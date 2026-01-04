@@ -31,6 +31,11 @@
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-boot-starter</artifactId>
+            <version>3.0.0</version>
+        </dependency>
+        <dependency>
             <groupId>org.redisson</groupId>
             <artifactId>redisson-spring-boot-starter</artifactId>
             <version>${redisson.version}</version>
@@ -55,17 +60,10 @@
             <artifactId>spring-kafka</artifactId>
         </dependency>
 
-        <!-- 依赖 api-service 进行 RPC 调用 -->
-        <dependency>
-            <groupId>com.sfs</groupId>
-            <artifactId>api-service</artifactId>
-            <version>${project.version}</version>
-        </dependency>
         <!-- 依赖 common-service -->
         <dependency>
             <groupId>com.sfs</groupId>
             <artifactId>common-service</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <!-- Dubbo 依赖 -->
@@ -84,6 +82,16 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sfs</groupId>
+            <artifactId>common-service</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+            <scope>compile</scope>
         </dependency>
 
     </dependencies>

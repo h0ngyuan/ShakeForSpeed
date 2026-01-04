@@ -14,7 +14,6 @@
     <!-- 定义子模块 -->
     <modules>
         <module>common-service</module>
-        <module>api-service</module>
         <module>gateway-service</module>
         <module>main-service</module>
         <module>rank-service</module>
@@ -72,7 +71,7 @@
                 <artifactId>mybatis-plus-boot-starter</artifactId>
                 <version>${mybatis.plus.version}</version>
             </dependency>
-            
+
             <!-- Redisson -->
             <dependency>
                 <groupId>org.redisson</groupId>
@@ -148,6 +147,12 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-shade-plugin</artifactId>
                     <version>3.5.0</version>
+                </plugin>
+                <plugin>
+                    <!-- Swagger -->
+                        <groupId>io.springfox</groupId>
+                        <artifactId>springfox-boot-starter</artifactId>
+                        <version>3.0.0</version>
                 </plugin>
             </plugins>
         </pluginManagement>

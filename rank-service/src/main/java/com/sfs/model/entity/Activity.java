@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
-import org.apache.kafka.common.protocol.types.Field;
+import com.sfs.model.enums.ActivityState;
 
 import java.time.LocalDateTime;
 
@@ -26,6 +26,7 @@ public class Activity {
     private Integer roomPwd;
     private Double longitude;
     private Double latitude;
+    private ActivityState state;
 
 
     @Getter

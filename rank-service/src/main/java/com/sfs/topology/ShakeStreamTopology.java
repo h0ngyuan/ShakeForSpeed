@@ -42,8 +42,8 @@ public class ShakeStreamTopology {
                                 aggregate + event.getCount()
                 );
         totalShakes.toStream()
-                .map((windowedkey,total)->{
-                    String activityId = windowedkey.key();
+                .map((windowedKey,total)->{
+                    String activityId = windowedKey.key();
                     String output = JSONUtil.toJsonStr(Map.of(
                             "activity", activityId,
                             "totalShakes", total

@@ -1,11 +1,13 @@
 package com.sfs.controller;
 
 import com.sfs.common.annotation.Ignored;
-import com.sfs.model.dto.UserDTO;
+import com.sfs.model.dto.LoginQuery;
 import com.sfs.service.AuthService;
 import com.sfs.utils.result.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import javax.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/auth")
@@ -16,13 +18,13 @@ public class AuthController {
 
     @Ignored
     @PostMapping("/login")
-    public Result login(@RequestBody UserDTO userDTO) {
-        return authService.in(userDTO);
+    public Result login(@RequestBody LoginQuery loginQuery) {
+        return authService.login(loginQuery);
     }
 
-    @PostMapping("/out")
-    public Result out(@RequestParam("id") int userId) {
-        return authService.out(userId);
+    @PostMapping("/logout")
+    public Result logout(@RequestParam("id") int userId, HttpServletRequest request) {
+        return authService.logout(userId,request);
     }
 
 }

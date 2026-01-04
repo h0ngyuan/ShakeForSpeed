@@ -1,93 +1,110 @@
 package com.sfs.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.jwt.JWT;
-import cn.hutool.jwt.JWTPayload;
-import cn.hutool.jwt.JWTUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.sfs.common.util.JwtUtil;
 import com.sfs.mapper.AuthMapper;
-import com.sfs.model.dto.UserDTO;
-import com.sfs.model.entity.User;
-import com.sfs.model.enums.AppHttpCodeEnum;
-import com.sfs.model.vo.UserVO;
+import com.sfs.model.dto.LoginQuery;
+import com.sfs.model.entity.UserAccount;
 import com.sfs.service.AuthService;
-import com.sfs.utils.context.UserContext;
 import com.sfs.utils.result.Result;
+import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import javax.servlet.http.HttpServletRequest;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
+@DubboService( interfaceClass =AuthService.class)
 @Service
-public class AuthServiceImpl extends ServiceImpl<AuthMapper,User> implements AuthService {
+public class AuthServiceImpl extends ServiceImpl<AuthMapper, UserAccount> implements com.sfs.service.AuthService {
 
     @Autowired
     private AuthMapper authMapper;
-
-    @Value("${jwt.secret}")
-    private String jwtSecret;
-
-    @Value("${jwt.expire}")
-    private long jwtExpire;
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
+    @Autowired
+    private AuthService proxy;
 
     @Override
-    public Result in(UserDTO userDTO) {
-        if (userDTO==null){
-            return Result.failResult(AppHttpCodeEnum.LOGIN_ERROR);
+    public Result wxLogin(String qtParam) {
+        UserAccount qw = new UserAccount();
+        qw.setUid(qtParam);
+        List<UserAccount> accounts = authMapper.selectList(new LambdaQueryWrapper<>(qw));
+        UserAccount account;
+        if (accounts==null||accounts.isEmpty()) {
+            //TODO 执行新增逻辑,这边有默认图片的
+            account=new UserAccount();
+            account.setUid(qtParam);
+            account.setRole("用户");
+            account.setNickname("默认用户"+ LocalDateTime.now());
+            account.setLoginCount(0);
+            account.setCreatedAt(LocalDateTime.now());
+            account.setUpdatedAt(LocalDateTime.now());
+            account.setStatus(1);
+            account.setLastLoginTime(LocalDateTime.now());
+            authMapper.insert(account);
+        }else {
+            account = accounts.get(0);
         }
-        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(User::getUsername,userDTO.getUsername())
-                    .eq(User::getPassword,userDTO.getPassword());
-        User user = authMapper.selectOne(queryWrapper);
-        if (user==null){
-            return Result.failResult(AppHttpCodeEnum.USER_DATA_NOT_EXIST);
-        }
-        UserContext.setUser(user);
-        UserVO userVO= BeanUtil.toBean(user,UserVO.class);
-        // 生成JWT token
-        String token = generateToken(user);
-        userVO.setToken(token);
-        return Result.successResult(userVO);
+        account.setLoginCount(account.getLoginCount()+1);
+        account.setLastLoginTime(LocalDateTime.now());
+        authMapper.update(new LambdaUpdateWrapper<>(account));
+        String k = UUID.randomUUID().toString().replace("-", "");
+        String v = JwtUtil.objectToJwt(account);
+        stringRedisTemplate.opsForValue().set(k,v,2,TimeUnit.HOURS);
+        return Result.successResult(k);
     }
 
     @Override
-    public Result out(int userId) {
-        UserContext.clear();
-        return Result.successResult(AppHttpCodeEnum.LOGIN_OUT);
+    @Transactional(rollbackFor = Exception.class,propagation = Propagation.REQUIRED)
+    public Result login(LoginQuery loginQuery) {
+        if(loginQuery.getAccount()==null||loginQuery.getPassword()==null)
+            return Result.failResult(400,"账号密码不完整");
+        UserAccount account = new UserAccount();
+        account.setUid(loginQuery.getAccount());
+        List<UserAccount> userAccounts =
+                authMapper.selectList(new LambdaQueryWrapper<>(account));
+        if (userAccounts==null||userAccounts.isEmpty()){
+            return Result.failResult(500,"查无此账号");
+        }
+        UserAccount user = userAccounts.stream()
+                .filter(a -> a.getPassword()
+                        .equals(loginQuery.getPassword()))
+                .toList().get(0);
+        if (user.getStatus()==0){
+            return Result.failResult(400,"账户已注销");
+        }
+        if (user.getBanUtil()!=null&&user.getBanUtil().isAfter(LocalDateTime.now())){
+            return Result.failResult(400,"账号封禁中，还需要等待"+ Duration.between(user.getBanUtil(),LocalDateTime.now()) +"秒");
+        }
+        user.setLoginCount(user.getLoginCount()+1);
+        authMapper.update(new LambdaUpdateWrapper<>(user));
+        String k = UUID.randomUUID().toString().replace("-","");
+        String v = JwtUtil.objectToJwt(user);
+        stringRedisTemplate.opsForValue().set(k,v,12, TimeUnit.HOURS);
+        return Result.successResult(k);
     }
 
     @Override
-    public User getUserByToken(String token) {
-        try {
-            // 验证token
-            boolean validate = JWTUtil.verify(token, jwtSecret.getBytes());
-            if (!validate) {
-                return null;
-            }
-
-            // 解析token
-            JWT jwt = JWTUtil.parseToken(token);
-            JWTPayload payload = jwt.getPayload();
-            Long userId = Long.valueOf(payload.getClaim("userId").toString());
-
-            // 查询用户
-            return authMapper.selectById(userId);
-        } catch (Exception e) {
-            return null;
-        }
+    public Result logout(int userId, HttpServletRequest request) {
+        stringRedisTemplate.delete(request.getHeader("Token"));
+        return Result.successResult();
     }
 
-    private String generateToken(User user) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("userId", user.getUserId());
-        claims.put("username", user.getUsername());
-        claims.put("role", user.getRole());
-        claims.put("exp", new Date(System.currentTimeMillis() + jwtExpire));
-
-        return JWTUtil.createToken(claims, jwtSecret.getBytes());
+    @Override
+    public Result wxLogout(HttpServletRequest request) {
+        stringRedisTemplate.delete(request.getHeader("Token"));
+        return Result.successResult();
     }
+
+
 }

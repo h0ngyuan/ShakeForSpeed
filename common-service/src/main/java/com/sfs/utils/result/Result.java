@@ -32,6 +32,10 @@ public class Result<T> implements Serializable {
         this.msg=msg;
     }
 
+    public static Result successResult(){
+        return setCodeEnum(AppHttpCodeEnum.SUCCESS,AppHttpCodeEnum.SUCCESS.getErrorMessage());
+    }
+
     public static Result successResult(int code,String msg){
         Result result=new Result();
         return result.success(code,msg);

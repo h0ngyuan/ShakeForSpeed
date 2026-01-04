@@ -19,13 +19,13 @@ public class RewardServiceImpl extends ServiceImpl<RewardMapper, Reward> impleme
     public Result acquireRewardsById(Long activityId) {
         List<RewardVO> vos = list(new LambdaQueryWrapper<Reward>()
                 .eq(Reward::getActivityId, activityId)
-                .orderByAsc(Reward::getRankRangeFront))
+                .orderByAsc(Reward::getRankStart))
                 .stream().map(reward -> {
                     RewardVO vo = new RewardVO();
                     vo.setId(reward.getId());
                     vo.setName(reward.getRewardName());
-                    vo.setRankStart(reward.getRankRangeFront());
-                    vo.setRankEnd(reward.getRankRangeEnd());
+                    vo.setRankStart(reward.getRankStart());
+                    vo.setRankEnd(reward.getRankEnd());
                     vo.setImageUrl(reward.getRewardImg());
                     return vo;
                 }).collect(Collectors.toList());

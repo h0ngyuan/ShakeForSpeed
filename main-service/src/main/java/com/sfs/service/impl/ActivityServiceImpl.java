@@ -1,29 +1,23 @@
 package com.sfs.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sfs.common.exception.RedissonException;
 import com.sfs.config.MinioConfig.MinioService;
 import com.sfs.mapper.ActivityMapper;
-import com.sfs.model.dto.ActivityInfoDTO;
-import com.sfs.model.dto.CreateActivityDTO;
-import com.sfs.model.dto.QueryActivityDTO;
-import com.sfs.model.dto.RewardDTO;
+import com.sfs.model.dto.*;
 import com.sfs.model.entity.Activity;
 import com.sfs.model.entity.Reward;
 import com.sfs.model.enums.ActivityState;
-import com.sfs.model.enums.GroupConstants;
+import com.sfs.model.enums.ActivityType;
 import com.sfs.model.enums.RedissonPrefixEnum;
 import com.sfs.model.enums.TopicConstants;
 import com.sfs.model.vo.ActivityDetailVO;
 import com.sfs.model.vo.RewardVO;
 import com.sfs.service.ActivityService;
 import com.sfs.service.RewardService;
-import com.sfs.utils.context.UserContext;
+import com.sfs.utils.context.AccountContext;
 import com.sfs.utils.result.Result;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -31,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -55,48 +50,41 @@ public class ActivityServiceImpl extends ServiceImpl<ActivityMapper, Activity> i
     private KafkaTemplate<String,Object> kafkaTemplate;
 
     @Override
-    public Result queryActivities(QueryActivityDTO queryActivityDTO) {
-        LambdaQueryWrapper<Activity> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.like(queryActivityDTO.getActivityNameOrId()!=null,Activity::getId,queryActivityDTO.getActivityNameOrId())
-                .or().like(queryActivityDTO.getActivityNameOrId()!=null,Activity::getActivityName,queryActivityDTO.getActivityNameOrId()) ;
-        queryWrapper.eq(queryActivityDTO.getRole()!=null,Activity::getCreatorRole,queryActivityDTO.getRole());
-        if (queryActivityDTO.getRangeTimeBefore()!=null&&queryActivityDTO.getRangeTimeAfter()!=null) {
-            queryWrapper.between(Activity::getBeginTime,
-                    (queryActivityDTO.getRangeTimeBefore().isBefore(queryActivityDTO.getRangeTimeAfter())?queryActivityDTO.getRangeTimeBefore():queryActivityDTO.getRangeTimeAfter()),
-                    (queryActivityDTO.getRangeTimeBefore().isBefore(queryActivityDTO.getRangeTimeAfter())?queryActivityDTO.getRangeTimeBefore():queryActivityDTO.getRangeTimeAfter())
-                    );
-        }
-        Page<Activity> page = new Page<>();
-        page.setCurrent(queryActivityDTO.getPageIndex());
-        page.setSize(queryActivityDTO.getPageSize());
-        IPage<Activity> activityPages = activityMapper.selectPage(page,queryWrapper);
-        return Result.successResult(activityPages);
+    public Result queryActivities(ActivityQuery query) {
+        LambdaQueryWrapper<Activity> queryWrapper = new LambdaQueryWrapper<Activity>()
+                .eq(query.getActivityNo() != null, Activity::getActivityNo, query.getActivityNo())
+                .ge(query.getCreatedAt() != null, Activity::getCreatedAt, query.getCreatedAt())
+                .ge(query.getUpdatedAt() != null, Activity::getUpdatedAt, query.getUpdatedAt())
+                .ge(query.getBeginTime() != null, Activity::getBeginTime, query.getBeginTime())
+                .le(query.getEndTime() != null, Activity::getEndTime, query.getEndTime());
+        return Result.successResult(activityMapper.selectList(queryWrapper));
     }
 
     @Override
     public void createActivity(CreateActivityDTO createActivityDTO) throws Exception {
-        Activity activity = BeanUtil.copyProperties(createActivityDTO, Activity.class)
-                .toBuilder()
-                .creatorId(UserContext.getUser().getUserId())
-                .creatorRole(UserContext.getUser().getRole())
-                .activityType(Activity.ActivityType.SFS)
-                .createTime(LocalDateTime.now())
-//                .roomPwd(RandomUtil.randomInt(100000, 999999))
+        Activity activity = Activity.builder()
+                .name(createActivityDTO.getActivityName())
+                .beginTime(createActivityDTO.getBeginTime())
+                .durationMs(createActivityDTO.getDurTime())
+                .lng(BigDecimal.valueOf(createActivityDTO.getLongitude()))
+                .lat(BigDecimal.valueOf(createActivityDTO.getLatitude()))
+                .creatorId(AccountContext.getAccount().getId())
+                .creatorRole(AccountContext.getAccount().getRole())
+                .activityType(ActivityType.SFS)
+                .createdAt(LocalDateTime.now())
                 .build();
-        //房间号生成了得先查看当前redis有没有相同的，如果没有才能塞进去
-        RLock lock = redissonClient.getLock(RedissonPrefixEnum.CREATE_ACTIVITY_PASSWORD_LOCK);
-        int roomPwd = RandomUtil.randomInt(100000, 999999);
-        if (lock.tryLock(5,10, TimeUnit.SECONDS)) {
-            try {
-                while (!redissonClient.getScoredSortedSet(RedissonPrefixEnum.ACTIVITY)
-                        .valueRange(roomPwd, roomPwd).isEmpty()){
-                    roomPwd=RandomUtil.randomInt(100000, 999999);
-                }
-            }finally {
-                lock.unlock();
-            }
-        }else {
-            throw new RedissonException("密码生成错误");
+        //加个锁，获取房间密码，以后扫码进入
+        String roomPwd = null;
+        synchronized (this){
+            roomPwd = RandomUtil.randomString(6);
+            boolean f = false;
+            do {
+                List<Activity> activities = activityMapper.selectList(
+                        new LambdaQueryWrapper<Activity>()
+                                .eq(Activity::getRoomPwd, roomPwd)
+                                .eq(Activity::getState, 1));
+                if (activities==null||activities.isEmpty()) f=true;
+            }while (f);
         }
         activity.setRoomPwd(roomPwd);
         save(activity);
@@ -109,8 +97,8 @@ public class ActivityServiceImpl extends ServiceImpl<ActivityMapper, Activity> i
             Reward rw = Reward.builder()
                     .activityId(activity.getId())
                     .rewardName(reward.getName())
-                    .rankRangeFront(reward.getRankStart())
-                    .rankRangeEnd(reward.getRankEnd())
+                    .rankStart(reward.getRankStart())
+                    .rankEnd(reward.getRankEnd())
                     .rewardImg(rewardImgUrl)
                     .build();
             rewardService.save(rw);
@@ -131,14 +119,14 @@ public class ActivityServiceImpl extends ServiceImpl<ActivityMapper, Activity> i
     }
 
     @Override
-    public Result getActivityById(Long id) {
+    public Result getActivityDetailById(Long id) {
         Activity activity = activityMapper.selectById(id);
         if (activity == null) {
             return Result.failResult(404, "活动不存在");
         }
         // 查询关联的奖励数�?
         LambdaQueryWrapper<Reward> rewardQueryWrapper = new LambdaQueryWrapper<>();
-        rewardQueryWrapper.eq(Reward::getActivityId, id).orderByAsc(Reward::getRankRangeFront);
+        rewardQueryWrapper.eq(Reward::getActivityId, id).orderByAsc(Reward::getRankStart);
         List<Reward> rewards = rewardService.list(rewardQueryWrapper);
 
         // 转换奖励数据为前端期望的格式
@@ -147,8 +135,8 @@ public class ActivityServiceImpl extends ServiceImpl<ActivityMapper, Activity> i
                     RewardVO vo = new RewardVO();
                     vo.setId(reward.getId());
                     vo.setName(reward.getRewardName());
-                    vo.setRankStart(reward.getRankRangeFront());
-                    vo.setRankEnd(reward.getRankRangeEnd());
+                    vo.setRankStart(reward.getRankStart());
+                    vo.setRankEnd(reward.getRankEnd());
                     vo.setImageUrl(reward.getRewardImg());
                     return vo;
                 })
@@ -170,13 +158,13 @@ public class ActivityServiceImpl extends ServiceImpl<ActivityMapper, Activity> i
     public Result joinActivity(ActivityInfoDTO activityInfoDTO) throws Exception {
         //先查看有没有房间号是这样的房间
         LambdaQueryWrapper<Activity> activityQueryWrapper = new LambdaQueryWrapper<Activity>().eq(Activity::getRoomPwd, activityInfoDTO.getRoomPwd())
-                .in(Activity::getState, Arrays.asList(ActivityState.CREATED));
+                .in(Activity::getState, List.of(ActivityState.CREATED));
         Activity activity = activityMapper.selectOne(activityQueryWrapper);
-        if (activity==null&&activity.getRoomPwd()==null){
+        if (activity==null||activity.getRoomPwd()==null){
             throw new Exception("没有这样的房间");
         }
         //然后加入房间，上锁是为了防止了多设备情况
-        String activityId = String.valueOf(activity.getId());
+        String activityId = activity.getId().toString();
         String activity_activityId = RedissonPrefixEnum.ACTIVITY + activityId;
         String join_activityId = "JOIN"+activityId;
         RLock lock = redissonClient.getLock(join_activityId);

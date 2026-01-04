@@ -1,25 +1,19 @@
 package com.sfs.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.sfs.model.dto.UserDTO;
-import com.sfs.model.entity.User;
+import com.sfs.model.dto.LoginQuery;
+import com.sfs.model.entity.UserAccount;
 import com.sfs.utils.result.Result;
 
-public interface AuthService extends IService<User> {
-    
-    /**
-     * 验证用户身份
-     * @param userDTO
-     * @return Result
-     */
-    Result in(UserDTO userDTO);
+import javax.servlet.http.HttpServletRequest;
 
-    Result out(int userId);
+public interface AuthService extends IService<UserAccount> {
 
-    /**
-     * 根据token获取用户
-     * @param token
-     * @return User
-     */
-    User getUserByToken(String token);
+    Result wxLogin(String qtParam);
+
+    Result login(LoginQuery loginQuery);
+
+    Result logout(int userId, HttpServletRequest request);
+
+    Result wxLogout(HttpServletRequest request);
 }

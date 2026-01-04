@@ -1,6 +1,5 @@
 package com.sfs.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.sfs.model.entity.Activity;
 import com.sfs.model.enums.ActivityState;
@@ -14,6 +13,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import static com.sfs.model.enums.ActivityState.CREATED;
 
 @Service
 public class RoomServiceImpl implements RoomService {

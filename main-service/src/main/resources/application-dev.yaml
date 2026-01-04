@@ -1,14 +1,14 @@
 server:
-  port: 8080
+  port: 8002
 
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/sfs_db?useSSL=false&serverTimezone=UTC
+    url: jdbc:mysql://119.91.238.231:3306/sfs_db?useSSL=false&serverTimezone=UTC
     username: root
     password: hyuans
     driver-class-name: com.mysql.cj.jdbc.Driver
   redis:
-    host: localhost
+    host: 119.91.238.231
     port: 6379
     database: 1
 
@@ -17,7 +17,7 @@ mybatis-plus:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
 minio:
-  endpoint: http://127.0.0.1:9000
+  endpoint: http://119.91.238.231:9000
   access-key: minioadmin
   secret-key: minioadmin
   buckets:
@@ -26,4 +26,18 @@ minio:
 jwt:
   secret: 111
   expire: 1000000000
+
+# Dubbo配置
+dubbo:
+  application:
+    name: main-service
+  registry:
+    address: nacos://119.91.238.231:8848
+    username: nacos
+    password: nacos
+  protocol:
+    name: dubbo
+    port: 20880
+  consumer:
+    timeout: 3000
 

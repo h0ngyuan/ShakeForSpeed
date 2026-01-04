@@ -7,23 +7,16 @@ spring:
   cloud:
     gateway:
       routes:
-        # API服务路由
-        - id: api-service
-          uri: http://localhost:8001
-          predicates:
-            - Path=/api/**
-          filters:
-            - StripPrefix=1
         # 主服务路由
         - id: main-service
-          uri: http://localhost:8002
+          uri: http://119.91.238.231:8002
           predicates:
             - Path=/main/**
           filters:
             - StripPrefix=1
         # 排名服务路由 (HTTP API)
         - id: rank-service
-          uri: http://localhost:8080
+          uri: http://119.91.238.231:8003
           predicates:
             - Path=/rank/**
           filters:

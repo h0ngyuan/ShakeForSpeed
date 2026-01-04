@@ -4,6 +4,7 @@ import com.sfs.model.entity.Activity;
 import com.sfs.model.enums.ActivityState;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -18,25 +19,24 @@ public class ActivityDetailVO {
     private LocalDateTime createTime;
     private Long creatorId;
     private Long durTime;
-    private Integer roomPwd;
-    private Double longitude;
-    private Double latitude;
+    private String roomPwd;
+    private BigDecimal longitude;
+    private BigDecimal latitude;
     private List<RewardVO> rewards;
 
     public static ActivityDetailVO fromActivity(Activity activity, List<RewardVO> rewards) {
         ActivityDetailVO vo = new ActivityDetailVO();
         vo.setId(activity.getId());
-        vo.setState(activity.getState());
-        vo.setActivityName(activity.getActivityName());
+        vo.setActivityName(activity.getName());
         vo.setActivityType(activity.getActivityType().name());
         vo.setCreatorRole(activity.getCreatorRole());
         vo.setBeginTime(activity.getBeginTime());
-        vo.setCreateTime(activity.getCreateTime());
+        vo.setCreateTime(activity.getBeginTime());
         vo.setCreatorId(activity.getCreatorId());
-        vo.setDurTime(activity.getDurTime());
+        vo.setDurTime(activity.getDurationMs());
         vo.setRoomPwd(activity.getRoomPwd());
-        vo.setLongitude(activity.getLongitude());
-        vo.setLatitude(activity.getLatitude());
+        vo.setLongitude(activity.getLng());
+        vo.setLatitude(activity.getLat());
         vo.setRewards(rewards);
         return vo;
     }

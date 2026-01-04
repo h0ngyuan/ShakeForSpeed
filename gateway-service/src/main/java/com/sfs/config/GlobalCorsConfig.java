@@ -40,14 +40,12 @@ public class GlobalCorsConfig {
             "Content-Type",
             "Authorization", 
             "token",
+            "Token",
             "X-Requested-With",
             "Accept",
             "Origin",
             "Access-Control-Request-Method",
-            "Access-Control-Request-Headers",
-            "X-User-Id",
-            "X-Username", 
-            "X-User-Role"
+            "Access-Control-Request-Headers"
         ));
         
         // 暴露的响应头
@@ -57,10 +55,7 @@ public class GlobalCorsConfig {
             "Access-Control-Allow-Headers",
             "Cache-Control",
             "Content-Language",
-            "Content-Type",
-            "X-User-Id",
-            "X-Username",
-            "X-User-Role"
+            "Content-Type"
         ));
         
         // 允许发送凭证（cookies）

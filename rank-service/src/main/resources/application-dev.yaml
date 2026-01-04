@@ -1,19 +1,20 @@
 server:
-  port: 8080
+  port: 8003
 
 spring:
   main:
     web-application-type: reactive
   datasource:
-    url: jdbc:mysql://localhost:3306/sfs_db?useSSL=false&serverTimezone=UTC
+    url: jdbc:mysql://119.91.238.231:3306/sfs_db?useSSL=false&serverTimezone=UTC
     username: root
     password: hyuans
     driver-class-name: com.mysql.cj.jdbc.Driver
   redis:
-    host: localhost
+    host: 119.91.238.231
     port: 6379
     database: 1
   kafka:
+    bootstrap-servers: 119.91.238.231:9092
     streams:
       application-id: shake-count
       properties:
@@ -24,7 +25,7 @@ mybatis-plus:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
 minio:
-  endpoint: http://127.0.0.1:9000
+  endpoint: http://119.91.238.231:9000
   access-key: minioadmin
   secret-key: minioadmin
   buckets:
@@ -37,3 +38,18 @@ jwt:
 app:
   broadcast-mode: webflux
   stream-engine: flink
+
+# Dubbo配置 - 调用main-service的auth服务
+dubbo:
+  application:
+    name: rank-service
+  registry:
+    address: nacos://119.91.238.231:8848
+    username: nacos
+    password: nacos
+  protocol:
+    name: dubbo
+    port: 20881
+  consumer:
+    timeout: 3000
+    check: false
