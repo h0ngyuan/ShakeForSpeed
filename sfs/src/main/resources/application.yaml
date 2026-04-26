@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: sfs
+  profiles:
+    active: dev
+
+server:
+  shutdown: graceful
+
+mybatis-plus:
+  global-config:
+    db-config:
+      logic-delete-field: deletedFlag
+      logic-delete-value: 1
+      logic-not-delete-value: 0

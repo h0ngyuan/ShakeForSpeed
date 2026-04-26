@@ -1,26 +1,14 @@
-<template>
-  <router-view />
-</template>
-
-<script>
-import { RouterView } from 'vue-router';
-
-export default {
-  components: {
-    RouterView
-  }
-}
+<script setup lang="ts">
+import { RouterView } from 'vue-router'
 </script>
 
+<template>
+  <div id="app">
+    <RouterView />
+  </div>
+</template>
+
 <style>
-/* 全局样式 */
-/* #app {
-position: absolute;
-top: 0;
-left: 0;
-right: 0;
-bottom: 0;
-margin: 0;
-height: 100vh; 
-} */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; }
 </style>

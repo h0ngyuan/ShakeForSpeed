@@ -1,107 +1,77 @@
 {
+  "easycom": {
+    "autoscan": true,
+    "custom": {}
+  },
   "pages": [
     {
       "path": "pages/index/index",
       "style": {
-        "navigationBarTitleText": "ShakeForSpeed",
-        "navigationBarTextStyle": "black",
-        "navigationBarBackgroundColor": "#FFFFFF",
-        "backgroundColor": "#F5F5F5",
-        "usingComponents": {}
+        "navigationBarTitleText": "摇一摇拼手速"
       }
     },
     {
-      "path": "pages/game/game",
+      "path": "pages/login/login",
       "style": {
-        "navigationBarTitleText": "摇晃游戏",
-        "navigationBarTextStyle": "black",
-        "navigationBarBackgroundColor": "#FFFFFF",
-        "backgroundColor": "#F5F5F5"
+        "navigationBarTitleText": "登录",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/shake/shake",
+      "style": {
+        "navigationBarTitleText": "摇一摇",
+        "pageOrientation": "portrait"
       }
     },
     {
       "path": "pages/rank/rank",
       "style": {
-        "navigationBarTitleText": "排行榜",
-        "navigationBarTextStyle": "black",
-        "navigationBarBackgroundColor": "#FFFFFF",
-        "backgroundColor": "#F5F5F5"
-      }
-    },
-    {
-      "path": "pages/myprofile/myprofile",
-      "style": {
-        "navigationBarTitleText": "个人中心",
-        "navigationBarTextStyle": "black",
-        "navigationBarBackgroundColor": "#FFFFFF",
-        "backgroundColor": "#F5F5F5"
-      }
-    },
-
-    {
-      "path": "pages/user/user",
-      "style": {
-        "navigationBarTitleText": "用户中心",
-        "navigationBarTextStyle": "black",
-        "navigationBarBackgroundColor": "#FFFFFF",
-        "backgroundColor": "#F5F5F5"
-      }
-    },
-    {
-      "path": "pages/account/account",
-      "style": {
-        "navigationBarTitleText": "账户中心",
-        "navigationBarTextStyle": "black",
-        "navigationBarBackgroundColor": "#FFFFFF",
-        "backgroundColor": "#F5F5F5"
-      }
-    },
-    {
-      "path": "pages/history/history",
-      "style": {
-        "navigationBarTitleText": "历史记录",
-        "navigationBarTextStyle": "black",
-        "navigationBarBackgroundColor": "#FFFFFF",
-        "backgroundColor": "#F5F5F5"
+        "navigationBarTitleText": "实时排行"
       }
     },
     {
       "path": "pages/profile/profile",
       "style": {
-        "navigationBarTitleText": "个人资料",
-        "navigationBarTextStyle": "black",
-        "navigationBarBackgroundColor": "#FFFFFF",
-        "backgroundColor": "#F5F5F5"
+        "navigationBarTitleText": "个人中心"
       }
     },
     {
-      "path": "pages/settings/settings",
+      "path": "pages/history/history",
       "style": {
-        "navigationBarTitleText": "设置",
-        "navigationBarTextStyle": "black",
-        "navigationBarBackgroundColor": "#FFFFFF",
-        "backgroundColor": "#F5F5F5"
+        "navigationBarTitleText": "参与历史"
       }
     }
   ],
+  "globalStyle": {
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "摇一摇拼手速",
+    "navigationBarBackgroundColor": "#FF6B35",
+    "backgroundColor": "#F5F5F5"
+  },
   "tabBar": {
-    "color": "#ffffff",
-    "selectedColor": "#ffffff",
-    "backgroundColor": "#3498db",
+    "color": "#999999",
+    "selectedColor": "#FF6B35",
+    "borderStyle": "black",
+    "backgroundColor": "#ffffff",
     "list": [
       {
         "pagePath": "pages/index/index",
-        "text": "参与"
-
+        "text": "首页",
+        "iconPath": "static/tab/home.png",
+        "selectedIconPath": "static/tab/home-active.png"
       },
       {
-        "pagePath": "pages/history/history",
-        "text": "历史"
-
+        "pagePath": "pages/rank/rank",
+        "text": "排行",
+        "iconPath": "static/tab/rank.png",
+        "selectedIconPath": "static/tab/rank-active.png"
       },
       {
-        "pagePath": "pages/myprofile/myprofile",
-        "text": "我的"
+        "pagePath": "pages/profile/profile",
+        "text": "我的",
+        "iconPath": "static/tab/profile.png",
+        "selectedIconPath": "static/tab/profile-active.png"
       }
     ]
   }

@@ -1,44 +1,55 @@
-<script>
-	export default {
-		// 全局错误处理
-		onError: function(err) {
-			console.error('全局错误:', err);
-			wx.showToast({
-				title: '发生错误: ' + err,
-				icon: 'none',
-				duration: 3000
-			});
-		},
+<script setup>
+import { onLaunch, onShow, onHide } from '@dcloudio/uni-app'
 
-		// 页面不存在时的处理
-		onPageNotFound: function(res) {
-				console.error('页面不存在:', res);
-				wx.showToast({
-					title: '页面不存在: ' + res.path,
-					icon: 'none',
-					duration: 3000
-				});
-				// 可以重定向到首页
-				setTimeout(function() {
-					wx.navigateTo({
-						url: '/pages/index/index'
-					});
-				}, 1000);
-			},
-		onLaunch: function() {
-			console.log('App Launch');
-		},
-		methods: {
-		},
-		onShow: function() {
-			console.log('App Show')
-		},
-		onHide: function() {
-			console.log('App Hide')
-		}
-	}
+onLaunch(() => {
+  console.log('App Launch')
+})
+
+onShow(() => {
+  console.log('App Show')
+})
+
+onHide(() => {
+  console.log('App Hide')
+})
 </script>
 
 <style>
-	/*每个页面公共css */
+page {
+  background-color: #f5f5f5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.container {
+  padding: 20rpx;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #FF6B35, #FF8E53);
+  color: #fff;
+  border: none;
+  border-radius: 40rpx;
+  font-size: 32rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+}
+
+.btn-primary:active {
+  opacity: 0.8;
+}
+
+.card {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+}
+
+.empty {
+  text-align: center;
+  padding: 100rpx 0;
+  color: #999;
+  font-size: 28rpx;
+}
 </style>

@@ -1,252 +1,103 @@
 <template>
-  <view class="rank-container">
-    <!-- 页面头部 -->
+  <view class="rank-page">
     <view class="rank-header">
-      <text class="header-title">排行榜</text>
-      <view class="header-actions">
-        <button class="action-btn primary" @click="backToHome">返回首页</button>
-      </view>
+      <text class="title">实时排行榜</text>
+      <view class="live-dot" :class="{ active: isLive }"></view>
     </view>
-    
-    <!-- 排行榜列表 -->
+
     <view class="rank-list">
-      <view 
-        v-for="(item, index) in rankList" 
-        :key="item.id" 
-        class="rank-item"
-        :class="{ 'top-three': index < 3 }"
-      >
-        <view class="rank-number">
-          <text v-if="index < 3" class="medal">{{ getMedal(index) }}</text>
-          <text v-else class="number">{{ index + 1 }}</text>
+      <view v-if="rankList.length === 0" class="empty">暂无排行数据</view>
+      <view class="rank-card" v-for="item in rankList" :key="item.rank">
+        <view class="rank-item" :class="{ 'is-top3': item.rank <= 3 }">
+          <text class="rank-num" :class="'rank-' + item.rank">{{ item.rank }}</text>
+          <text class="rank-name">{{ item.userId }}</text>
+          <text class="rank-score">{{ item.score }} 次</text>
         </view>
-        <view class="user-info">
-          <image :src="item.avatar" class="user-avatar" mode="aspectFill"></image>
-          <view class="user-details">
-            <text class="user-name">{{ item.name }}</text>
-            <text class="user-score">得分: {{ item.score }}</text>
-          </view>
-        </view>
-        <view class="user-time">
-          <text class="time-label">用时:</text>
-          <text class="time-value">{{ item.time }}s</text>
-        </view>
-      </view>
-      
-      <!-- 空状态 -->
-      <view v-if="rankList.length === 0" class="empty-state">
-        <text class="empty-text">暂无排名数据</text>
       </view>
     </view>
   </view>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      rankList: [
-        {
-          id: 1,
-          name: '张三',
-          avatar: '/static/avatar1.png',
-          score: 120,
-          time: '8.5'
-        },
-        {
-          id: 2,
-          name: '李四',
-          avatar: '/static/avatar2.png',
-          score: 110,
-          time: '9.2'
-        },
-        {
-          id: 3,
-          name: '王五',
-          avatar: '/static/avatar3.png',
-          score: 105,
-          time: '9.8'
-        },
-        {
-          id: 4,
-          name: '赵六',
-          avatar: '/static/avatar4.png',
-          score: 98,
-          time: '10.1'
-        },
-        {
-          id: 5,
-          name: '孙七',
-          avatar: '/static/avatar5.png',
-          score: 92,
-          time: '10.5'
-        }
-      ]
-    };
-  },
-  onLoad() {
-    // 页面加载时可以获取真实数据
-    // this.fetchRankList();
-  },
-  methods: {
-    // 获取奖牌图标
-    getMedal(index) {
-      const medals = ['🥇', '🥈', '🥉'];
-      return medals[index];
-    },
-    
-    // 返回首页
-    backToHome() {
-      wx.switchTab({
-        url: '/pages/index/index'
-      });
-    }
+<script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
+import api from '../../api/index.js'
+
+const activityId = ref(null)
+const rankList = ref([])
+const isLive = ref(false)
+let timer = null
+
+onLoad((options) => {
+  if (options.activityId) {
+    activityId.value = options.activityId
   }
-};
+})
+
+onMounted(() => {
+  if (activityId.value) {
+    loadRank()
+    timer = setInterval(loadRank, 2000)
+    isLive.value = true
+  }
+})
+
+onUnmounted(() => {
+  if (timer) clearInterval(timer)
+})
+
+const loadRank = async () => {
+  try {
+    rankList.value = await api.getRealtimeRank(activityId.value, 50)
+  } catch (e) {
+    console.error('Failed to load rank:', e)
+  }
+}
 </script>
 
 <style scoped>
-.rank-container {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20rpx;
-  display: flex;
-  flex-direction: column;
-}
-
+.rank-page { min-height: 100vh; padding: 20rpx; }
 .rank-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 20rpx;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 15rpx;
-  margin-bottom: 30rpx;
+  justify-content: center;
+  padding: 30rpx 0;
 }
-
-.header-title {
-  font-size: 36rpx;
-  font-weight: bold;
-  color: #fff;
+.title { font-size: 36rpx; font-weight: bold; color: #333; }
+.live-dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background: #999;
+  margin-left: 20rpx;
 }
-
-.header-actions {
-  display: flex;
-  gap: 10rpx;
+.live-dot.active {
+  background: #07C160;
+  animation: pulse 1s infinite;
 }
-
-.action-btn {
-  background: #fff;
-  color: #333;
-  border: none;
-  padding: 10rpx 20rpx;
-  border-radius: 25rpx;
-  font-size: 24rpx;
-  font-weight: bold;
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }
-
-.action-btn.primary {
-  background: #3498db;
-  color: #fff;
-}
-
-.rank-list {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 20rpx;
-}
-
+.rank-card { margin-bottom: 12rpx; }
 .rank-item {
   display: flex;
   align-items: center;
-  padding: 20rpx;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 15rpx;
-  box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.1);
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
 }
-
-.rank-item.top-three {
-  background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
-}
-
-.rank-number {
-  width: 80rpx;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.medal {
-  font-size: 40rpx;
-}
-
-.number {
-  font-size: 32rpx;
-  font-weight: bold;
-  color: #333;
-}
-
-.user-info {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 20rpx;
-}
-
-.user-avatar {
-  width: 80rpx;
-  height: 80rpx;
-  border-radius: 50%;
-  border: 2rpx solid #fff;
-  box-shadow: 0 2rpx 5rpx rgba(0, 0, 0, 0.1);
-}
-
-.user-details {
-  display: flex;
-  flex-direction: column;
-  gap: 5rpx;
-}
-
-.user-name {
+.is-top3 { background: linear-gradient(135deg, #FFF5E6, #FFE8CC); }
+.rank-num {
+  width: 60rpx;
   font-size: 28rpx;
-  font-weight: bold;
-  color: #333;
+  color: #999;
+  text-align: center;
 }
-
-.user-score {
-  font-size: 24rpx;
-  color: #666;
-}
-
-.user-time {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 5rpx;
-}
-
-.time-label {
-  font-size: 24rpx;
-  color: #666;
-}
-
-.time-value {
-  font-size: 28rpx;
-  font-weight: bold;
-  color: #3498db;
-}
-
-.empty-state {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.empty-text {
-  font-size: 32rpx;
-  color: #fff;
-  font-weight: bold;
-}
+.rank-1 { color: #FFD700; font-weight: bold; }
+.rank-2 { color: #C0C0C0; font-weight: bold; }
+.rank-3 { color: #CD7F32; font-weight: bold; }
+.rank-name { flex: 1; font-size: 30rpx; color: #333; margin: 0 20rpx; }
+.rank-score { font-size: 28rpx; color: #FF6B35; font-weight: bold; }
+.empty { text-align: center; padding: 100rpx 0; color: #999; }
 </style>
